@@ -1,0 +1,485 @@
+// FlxOraCMS — Prisma schema (MySQL).
+// See PLAN.md "Data Model" for the design rationale.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------------
+// Auth & Access Control (RBAC)
+// ----------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?   @map("password_hash")
+  image         String?
+  emailVerified DateTime? @map("email_verified")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  roles    UserRole[]
+  accounts Account[]
+  sessions Session[]
+
+  authoredEntries ContentEntry[] @relation("EntryAuthor")
+  revisions       Revision[]
+  media           Media[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  slug        String   @unique // super-admin, admin, editor, author, contributor, subscriber
+  name        String
+  description String?  @db.Text
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  slug        String   @unique // e.g. content.create, users.manage, themes.manage
+  name        String
+  group       String? // grouping for the UI (Content, Users, Themes, ...)
+  description String?  @db.Text
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String @map("user_id")
+  roleId String @map("role_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id")
+  permissionId String     @map("permission_id")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+// Auth.js adapter tables (Account/Session/VerificationToken) — kept for future
+// OAuth providers. Credentials login uses JWT sessions.
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ----------------------------------------------------------------------------
+// Content — generic "Collections" (WP post types) with custom fields
+// ----------------------------------------------------------------------------
+
+enum EntryStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  TRASHED
+}
+
+model ContentType {
+  id           String   @id @default(cuid())
+  slug         String   @unique // page, post, service, ...
+  label        String
+  labelSingular String  @map("label_singular")
+  description  String?  @db.Text
+  icon         String?
+  isSystem     Boolean  @default(false) @map("is_system")
+  // Feature flags: { seo: true, revisions: true, author: true, hierarchical: false }
+  supports     Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  fields  ContentField[]
+  entries ContentEntry[]
+
+  @@map("content_types")
+}
+
+model ContentField {
+  id            String  @id @default(cuid())
+  contentTypeId String  @map("content_type_id")
+  name          String // machine name
+  label         String
+  type          String // text, textarea, number, boolean, select, media, relation, ...
+  config        Json? // options, validation, default
+  sortOrder     Int     @default(0) @map("sort_order")
+
+  contentType ContentType         @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
+  values      ContentFieldValue[]
+
+  @@unique([contentTypeId, name])
+  @@map("content_fields")
+}
+
+model ContentEntry {
+  id            String      @id @default(cuid())
+  contentTypeId String      @map("content_type_id")
+  title         String
+  slug          String
+  status        EntryStatus @default(DRAFT)
+  authorId      String?     @map("author_id")
+  templateId    String?     @map("template_id")
+  parentId      String?     @map("parent_id")
+  excerpt       String?     @db.Text
+  contentHtml   String?     @map("content_html") @db.LongText // Tiptap output (MVP)
+  contentJson   Json?       @map("content_json") // block tree (Phase 2)
+  featuredMedia String?     @map("featured_media")
+  publishedAt   DateTime?   @map("published_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  contentType ContentType   @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
+  author      User?         @relation("EntryAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  template    Template?     @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  parent      ContentEntry? @relation("EntryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    ContentEntry[] @relation("EntryHierarchy")
+
+  fieldValues ContentFieldValue[]
+  revisions   Revision[]
+  terms       EntryTerm[]
+  seo         SeoMeta?
+
+  @@unique([contentTypeId, slug])
+  @@index([status, publishedAt])
+  @@index([authorId])
+  @@map("content_entries")
+}
+
+model ContentFieldValue {
+  id      String @id @default(cuid())
+  entryId String @map("entry_id")
+  fieldId String @map("field_id")
+  value   Json?
+
+  entry ContentEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  field ContentField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, fieldId])
+  @@map("content_field_values")
+}
+
+model Revision {
+  id        String   @id @default(cuid())
+  entryId   String   @map("entry_id")
+  authorId  String?  @map("author_id")
+  snapshot  Json // full entry snapshot
+  createdAt DateTime @default(now()) @map("created_at")
+
+  entry  ContentEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  author User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([entryId])
+  @@map("revisions")
+}
+
+// ----------------------------------------------------------------------------
+// Taxonomies (categories, tags) — reusable across content types
+// ----------------------------------------------------------------------------
+
+model Taxonomy {
+  id           String   @id @default(cuid())
+  slug         String   @unique // category, tag
+  label        String
+  hierarchical Boolean  @default(false)
+
+  terms Term[]
+
+  @@map("taxonomies")
+}
+
+model Term {
+  id         String  @id @default(cuid())
+  taxonomyId String  @map("taxonomy_id")
+  name       String
+  slug       String
+  parentId   String? @map("parent_id")
+  description String? @db.Text
+
+  taxonomy Taxonomy    @relation(fields: [taxonomyId], references: [id], onDelete: Cascade)
+  parent   Term?       @relation("TermHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Term[]      @relation("TermHierarchy")
+  entries  EntryTerm[]
+
+  @@unique([taxonomyId, slug])
+  @@map("terms")
+}
+
+model EntryTerm {
+  entryId String @map("entry_id")
+  termId  String @map("term_id")
+
+  entry ContentEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  term  Term         @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  @@id([entryId, termId])
+  @@index([termId])
+  @@map("entry_terms")
+}
+
+// ----------------------------------------------------------------------------
+// Theming & Layout
+// ----------------------------------------------------------------------------
+
+model Theme {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  name       String
+  version    String   @default("1.0.0")
+  author     String?
+  screenshot String?
+  manifest   Json? // parsed theme.json
+  isActive   Boolean  @default(false) @map("is_active")
+  installedAt DateTime @default(now()) @map("installed_at")
+
+  templates Template[]
+
+  @@map("themes")
+}
+
+model Template {
+  id       String @id @default(cuid())
+  themeId  String @map("theme_id")
+  name     String
+  type     String // home, page, post, archive, search, 404, custom
+  filePath String @map("file_path")
+
+  theme   Theme          @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  entries ContentEntry[]
+
+  @@unique([themeId, name])
+  @@map("templates")
+}
+
+enum LayoutAreaType {
+  HEADER
+  FOOTER
+  AREA // generic theme area (topbar, announcement, sidebar, 404, search, ...)
+}
+
+model LayoutArea {
+  id        String         @id @default(cuid())
+  type      LayoutAreaType
+  key       String? // for AREA: topbar, announcement, sidebar, etc.
+  name      String
+  status    Boolean        @default(true)
+  content   Json // component tree (rows -> columns -> components, with animation config)
+  settings  Json? // sticky/transparent/scroll behaviour, etc.
+  isDefault Boolean        @default(false) @map("is_default")
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  assignments LayoutAssignment[]
+
+  @@index([type, isDefault])
+  @@map("layout_areas")
+}
+
+// Assignment rules: which header/footer/area applies to which content type or entry.
+model LayoutAssignment {
+  id            String  @id @default(cuid())
+  layoutAreaId  String  @map("layout_area_id")
+  contentTypeId String? @map("content_type_id") // null = applies broadly
+  entryId       String? @map("entry_id") // most specific
+  priority      Int     @default(0)
+
+  layoutArea LayoutArea @relation(fields: [layoutAreaId], references: [id], onDelete: Cascade)
+
+  @@index([contentTypeId])
+  @@index([entryId])
+  @@map("layout_assignments")
+}
+
+model CustomizerSetting {
+  key   String @id // colors.primary, fonts.body, identity.logo, ...
+  value Json
+
+  @@map("customizer_settings")
+}
+
+model Menu {
+  id        String     @id @default(cuid())
+  slug      String     @unique // main, footer, ...
+  name      String
+  items     MenuItem[]
+
+  @@map("menus")
+}
+
+model MenuItem {
+  id        String  @id @default(cuid())
+  menuId    String  @map("menu_id")
+  parentId  String? @map("parent_id")
+  label     String
+  type      String // page, post, category, url, custom
+  reference String? // entry id / term id for internal targets
+  url       String? // external/custom url
+  target    String? // _self, _blank
+  config    Json? // mega-menu config (columns, featured)
+  sortOrder Int     @default(0) @map("sort_order")
+
+  menu     Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parent   MenuItem?  @relation("MenuItemHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children MenuItem[] @relation("MenuItemHierarchy")
+
+  @@index([menuId])
+  @@map("menu_items")
+}
+
+// ----------------------------------------------------------------------------
+// SEO / Analytics / Media / Settings / Plugins
+// ----------------------------------------------------------------------------
+
+model SeoMeta {
+  id           String  @id @default(cuid())
+  entryId      String  @unique @map("entry_id")
+  title        String?
+  description  String? @db.Text
+  canonical    String?
+  robots       String? // index,follow | noindex,nofollow | ...
+  ogImage      String? @map("og_image")
+  focusKeyword String? @map("focus_keyword")
+  schema       Json?
+  scores       Json? // computed analysis scores
+
+  entry ContentEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@map("seo_meta")
+}
+
+model Redirect {
+  id        String   @id @default(cuid())
+  from      String   @unique
+  to        String
+  code      Int      @default(301)
+  hits      Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("redirects")
+}
+
+model PageView {
+  id          String   @id @default(cuid())
+  path        String
+  visitorHash String   @map("visitor_hash")
+  referrer    String?
+  country     String?
+  device      String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([path])
+  @@index([createdAt])
+  @@map("page_views")
+}
+
+model MediaFolder {
+  id       String  @id @default(cuid())
+  name     String
+  parentId String? @map("parent_id")
+
+  parent   MediaFolder?  @relation("MediaFolderHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children MediaFolder[] @relation("MediaFolderHierarchy")
+  media    Media[]
+
+  @@map("media_folders")
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  folderId  String?  @map("folder_id")
+  uploaderId String? @map("uploader_id")
+  path      String // storage-relative path
+  mime      String
+  size      Int      @default(0)
+  width     Int?
+  height    Int?
+  alt       String?
+  caption   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  folder   MediaFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  uploader User?        @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
+
+  @@index([folderId])
+  @@map("media")
+}
+
+model Setting {
+  key   String @id // identity.title, integrations.ga, ...
+  value Json
+
+  @@map("settings")
+}
+
+model Plugin {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  version   String   @default("1.0.0")
+  manifest  Json?
+  isEnabled Boolean  @default(false) @map("is_enabled")
+  installedAt DateTime @default(now()) @map("installed_at")
+
+  @@map("plugins")
+}

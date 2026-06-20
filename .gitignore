@@ -32,6 +32,18 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# persistent storage (uploaded themes + media)
+/storage/themes/*
+/storage/media/*
+/storage/tmp/*
+!/storage/**/.gitkeep
+
+# playwright
+/test-results
+/playwright-report
+/.playwright
 
 # vercel
 .vercel

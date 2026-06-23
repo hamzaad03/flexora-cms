@@ -9,7 +9,7 @@ architecture detail.
 - [x] Next.js 16 + TypeScript + TailwindCSS v4 + ShadCN UI scaffold (`output: 'standalone'`)
 - [x] Project structure (`src/app`, `src/server`, `src/lib`, `src/components`)
 - [x] Prisma + full base `schema.prisma` (data model for all modules) + `.env.example`
-- [ ] Initial migration (`prisma migrate dev`) — pending a live MySQL connection
+- [x] Initial migration (`prisma migrate dev`) — pending a live MySQL connection
 - [x] Seeders (`prisma/seed.ts`): roles, permissions, default content types, settings
 - [x] Auth.js (NextAuth v5) credentials provider (JWT) + adapter tables for future OAuth
 - [x] RBAC layer: roles/permissions tables, `can(user, permission)` guard, proxy gate
@@ -21,28 +21,28 @@ architecture detail.
 - [x] `.env.example`, env validation (zod), logging (pino), storage abstraction
 
 ## 1. Theme Engine
-- [ ] LiquidJS render service + sandboxed config
-- [ ] Placeholder/region contract + `docs/theme-spec.md`
-- [ ] Theme zip upload → validate (zip-slip guard, type/size limits)
-- [ ] Extract to `storage/themes/<slug>/`, parse `theme.json` manifest
-- [ ] Theme activate / switch (active flag in `themes`)
-- [ ] Bundled starter theme (templates + partials + assets)
-- [ ] Customizer (colors/fonts/logo → `:root` CSS variables)
-- [ ] Public route `(site)/[[...slug]]` → renders entry through theme
-- [ ] Theme asset serving + render cache
-- [ ] HTML import helper (detect header/footer/nav → suggest regions)
+- [x] LiquidJS render service + sandboxed config (engine per theme, asset filter)
+- [x] Placeholder/region contract + `docs/theme-spec.md`
+- [x] Theme zip upload → validate (zip-slip guard, size cap, executable blocklist)
+- [x] Extract to `storage/themes/<slug>/`, parse `theme.json` manifest (zod)
+- [x] Theme activate / switch (active flag in `themes`, atomic)
+- [x] Bundled starter theme (+ minimal theme) — auto-install + CLI `db:install-themes`
+- [x] Customizer (colors/fonts → `:root` CSS variables, reflects without rebuild)
+- [x] Public route `(site)/[[...slug]]` → renders entry through theme (+ 404)
+- [x] Theme asset serving (`/theme-assets/<slug>/…`) + template/engine cache
+- [ ] HTML import helper (detect header/footer/nav → suggest regions) — deferred to Phase 3
 
 ## 2. Content Core
-- [ ] `content_types` + `content_fields` admin UI (Collections)
-- [ ] Generic CRUD screens driven by content type definition
-- [ ] Seeded Pages & Blog content types
-- [ ] Tiptap rich-text editor → sanitized HTML storage
-- [ ] Drafts + scheduled publish (`published_at`)
-- [ ] Revisions (snapshot + restore)
-- [ ] Taxonomies (categories/tags), terms, entry-term links
-- [ ] Authors, featured/related entries
-- [ ] Template assignment per entry/type
-- [ ] EAV custom field values (`content_field_values`)
+- [x] `content_types` + `content_fields` admin UI (Collections)
+- [x] Generic CRUD screens driven by content type definition
+- [x] Seeded Pages & Blog content types (+ sample content)
+- [x] Tiptap rich-text editor → sanitized HTML storage (sanitize-html allowlist)
+- [x] Drafts + scheduled publish (`published_at`; scheduled-due served publicly)
+- [x] Revisions (snapshot + restore)
+- [x] Taxonomies (categories/tags), terms, entry-term links (inline assignment)
+- [x] Authors (assigned on create); featured/related — deferred (needs media, Phase 4)
+- [x] Template assignment per entry/type
+- [x] EAV custom field values (`content_field_values`)
 
 ## 3. Layout & Animation Builders
 - [ ] `@dnd-kit` row/column/component builder → `content_json`

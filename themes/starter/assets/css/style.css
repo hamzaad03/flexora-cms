@@ -1,0 +1,155 @@
+/* Starter theme. Consumes customizer CSS variables (injected as :root vars). */
+:root {
+  --primary: #0066ff;
+  --secondary: #111111;
+  --accent: #22c55e;
+  --text: #171717;
+  --background: #ffffff;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-heading: var(--font-body);
+  --container: 64rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--background);
+  line-height: 1.6;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  line-height: 1.2;
+}
+
+a {
+  color: var(--primary);
+}
+
+/* Header */
+.site-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+}
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding-block: 1rem;
+}
+.brand {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.brand__logo {
+  height: 2rem;
+  width: auto;
+  display: block;
+}
+.main-nav ul {
+  display: flex;
+  gap: 1.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.main-nav a {
+  text-decoration: none;
+  color: var(--text);
+}
+.main-nav a:hover {
+  color: var(--primary);
+}
+.submenu {
+  display: none;
+}
+
+/* Main */
+.container > * {
+  margin-block: 0;
+}
+main.container {
+  padding-block: 3rem;
+}
+.hero {
+  text-align: center;
+  padding-block: 2rem 3rem;
+}
+.hero__title {
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  margin: 0 0 0.5rem;
+}
+.hero__lead {
+  font-size: 1.25rem;
+  color: color-mix(in srgb, var(--text) 70%, transparent);
+}
+.prose {
+  max-width: 48rem;
+}
+.prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Archive */
+.post-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.5rem;
+}
+.post-list__item a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Footer */
+.site-footer {
+  border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  margin-top: 4rem;
+}
+.site-footer__inner {
+  padding-block: 2rem;
+}
+.footer-nav ul {
+  display: flex;
+  gap: 1.25rem;
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+.footer-nav a {
+  color: var(--text);
+  text-decoration: none;
+}
+.copyright {
+  color: color-mix(in srgb, var(--text) 60%, transparent);
+  font-size: 0.875rem;
+}
+
+/* 404 */
+.notfound {
+  text-align: center;
+  padding-block: 4rem;
+}
+.notfound h1 {
+  font-size: 4rem;
+  margin: 0;
+}

@@ -1,0 +1,12 @@
+<footer class="site-footer">
+  <div class="container site-footer__inner">
+    <nav class="footer-nav" aria-label="Footer">
+      <ul>
+        {% for item in menus.footer %}
+          <li><a href="{{ item.url }}" target="{{ item.target }}">{{ item.label }}</a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+    <p class="copyright">&copy; {{ year }} {{ site.title }}. {{ site.tagline }}</p>
+  </div>
+</footer>

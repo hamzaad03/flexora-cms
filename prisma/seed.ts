@@ -155,6 +155,104 @@ async function seedSettings() {
   console.log("✓ Settings + customizer defaults");
 }
 
+async function seedSampleContent() {
+  const pageType = await db.contentType.findUnique({ where: { slug: "page" } });
+  const postType = await db.contentType.findUnique({ where: { slug: "post" } });
+  if (!pageType || !postType) return;
+
+  const existingHome = await db.contentEntry.findFirst({
+    where: { contentTypeId: pageType.id, slug: "home" },
+  });
+  if (existingHome) {
+    console.log("ℹ Sample content exists — skipping");
+    return;
+  }
+
+  const admin = await db.user.findFirst({
+    where: { roles: { some: { role: { slug: "super-admin" } } } },
+  });
+  const authorId = admin?.id ?? null;
+  const now = new Date();
+
+  const home = await db.contentEntry.create({
+    data: {
+      contentTypeId: pageType.id,
+      title: "Welcome to FlxOraCMS",
+      slug: "home",
+      status: "PUBLISHED",
+      publishedAt: now,
+      authorId,
+      excerpt: "A self-hosted CMS where you upload a theme and edit content.",
+      contentHtml:
+        "<p>This home page is served through your active theme. Edit it in the admin, switch themes, and the content stays the same.</p>",
+    },
+  });
+
+  const about = await db.contentEntry.create({
+    data: {
+      contentTypeId: pageType.id,
+      title: "About",
+      slug: "about",
+      status: "PUBLISHED",
+      publishedAt: now,
+      authorId,
+      excerpt: "About this site.",
+      contentHtml:
+        "<p>FlxOraCMS lets agencies import ready-made HTML/CSS themes and manage content without touching code.</p>",
+    },
+  });
+
+  await db.contentEntry.create({
+    data: {
+      contentTypeId: postType.id,
+      title: "Hello World",
+      slug: "hello-world",
+      status: "PUBLISHED",
+      publishedAt: now,
+      authorId,
+      excerpt: "Our very first post.",
+      contentHtml: "<p>This is a sample blog post rendered by the theme.</p>",
+    },
+  });
+
+  const mainMenu = await db.menu.findUnique({ where: { slug: "main" } });
+  if (mainMenu) {
+    await db.menuItem.createMany({
+      data: [
+        {
+          menuId: mainMenu.id,
+          label: "Home",
+          type: "page",
+          reference: home.id,
+          sortOrder: 0,
+        },
+        {
+          menuId: mainMenu.id,
+          label: "About",
+          type: "page",
+          reference: about.id,
+          sortOrder: 1,
+        },
+      ],
+    });
+  }
+
+  const footerMenu = await db.menu.findUnique({ where: { slug: "footer" } });
+  if (footerMenu) {
+    await db.menuItem.create({
+      data: {
+        menuId: footerMenu.id,
+        label: "About",
+        type: "page",
+        reference: about.id,
+        sortOrder: 0,
+      },
+    });
+  }
+
+  console.log("✓ Sample content: home, about, hello-world + menu items");
+}
+
 async function seedSuperAdmin() {
   const email = process.env.SEED_ADMIN_EMAIL;
   const password = process.env.SEED_ADMIN_PASSWORD;
@@ -189,6 +287,7 @@ async function main() {
   await seedMenus();
   await seedSettings();
   await seedSuperAdmin();
+  await seedSampleContent();
   console.log("Done.");
 }
 

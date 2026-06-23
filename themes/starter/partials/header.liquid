@@ -1,0 +1,27 @@
+<header class="site-header">
+  <div class="container site-header__inner">
+    <a class="brand" href="/">
+      {% if site.logo %}
+        <img src="{{ site.logo }}" alt="{{ site.title }}" class="brand__logo" />
+      {% else %}
+        {{ site.title }}
+      {% endif %}
+    </a>
+    <nav class="main-nav" aria-label="Main">
+      <ul>
+        {% for item in menus.main %}
+          <li>
+            <a href="{{ item.url }}" target="{{ item.target }}">{{ item.label }}</a>
+            {% if item.children.size > 0 %}
+              <ul class="submenu">
+                {% for child in item.children %}
+                  <li><a href="{{ child.url }}" target="{{ child.target }}">{{ child.label }}</a></li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </nav>
+  </div>
+</header>

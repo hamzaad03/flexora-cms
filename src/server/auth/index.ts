@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { authConfig } from "./config";
 import { db } from "@/lib/db";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -19,7 +20,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      authorize: async (raw) => {
+      authorize: async (raw, request) => {
+        // Throttle login attempts per IP (10 / minute).
+        const ip = clientIp(request.headers);
+        if (!rateLimit(`login:${ip}`, 10, 60_000).ok) return null;
+
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
 

@@ -39,6 +39,15 @@ export default async function NewEntryPage({
     publishedAt: null,
     terms: {},
     fields: {},
+    seo: {
+      title: "",
+      description: "",
+      canonical: "",
+      robots: "",
+      ogImage: "",
+      focusKeyword: "",
+      schema: "",
+    },
   };
 
   return (

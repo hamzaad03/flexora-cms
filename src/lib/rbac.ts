@@ -25,6 +25,8 @@ export const PERMISSIONS = {
   // SEO & analytics
   "seo.manage": { name: "Manage SEO", group: "Marketing" },
   "analytics.view": { name: "View analytics", group: "Marketing" },
+  // Forms
+  "forms.manage": { name: "Manage forms", group: "Forms" },
   // Users
   "users.view": { name: "View users", group: "Users" },
   "users.manage": { name: "Manage users & roles", group: "Users" },
@@ -62,6 +64,7 @@ export const ROLES = {
       "menus.manage",
       "seo.manage",
       "analytics.view",
+      "forms.manage",
     ] as PermissionSlug[],
   },
   author: {

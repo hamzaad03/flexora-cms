@@ -7,6 +7,19 @@ export const ENTRY_STATUSES = [
   "TRASHED",
 ] as const;
 
+export const seoInputSchema = z
+  .object({
+    title: z.string().max(255).optional().nullable(),
+    description: z.string().max(400).optional().nullable(),
+    canonical: z.string().max(500).optional().nullable(),
+    robots: z.string().max(100).optional().nullable(),
+    ogImage: z.string().max(500).optional().nullable(),
+    focusKeyword: z.string().max(120).optional().nullable(),
+    schema: z.string().optional().nullable(), // raw JSON-LD string
+  })
+  .optional();
+export type SeoInputData = z.infer<typeof seoInputSchema>;
+
 export const entryInputSchema = z.object({
   title: z.string().min(1, "Title is required").max(255),
   slug: z.string().max(255).optional(),
@@ -22,6 +35,7 @@ export const entryInputSchema = z.object({
   terms: z.record(z.string(), z.array(z.string())).optional(),
   // custom field machine-name -> value
   fields: z.record(z.string(), z.unknown()).optional(),
+  seo: seoInputSchema,
 });
 export type EntryInput = z.infer<typeof entryInputSchema>;
 

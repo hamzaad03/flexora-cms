@@ -1,0 +1,167 @@
+/* FlxOraCMS layout regions (headers/footers/areas). Theme-agnostic base styles
+   for components rendered by the layout builder. Consumes customizer vars. */
+
+.flx-region {
+  --flx-container: 72rem;
+  width: 100%;
+}
+.flx-region__inner {
+  width: 100%;
+  max-width: var(--flx-container);
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+.flx-region.flx-transparent {
+  background: transparent;
+}
+.flx-region.flx-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--background, #fff);
+}
+.flx-region.flx-blur {
+  backdrop-filter: saturate(180%) blur(8px);
+}
+
+.flx-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.75rem;
+}
+.flx-col {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.flx-component {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Logo */
+.flx-logo {
+  font-weight: 700;
+  font-size: 1.125rem;
+  text-decoration: none;
+  color: inherit;
+}
+.flx-logo__img {
+  display: block;
+  height: 2rem;
+  width: auto;
+}
+
+/* Menu */
+.flx-menu__list,
+.flx-submenu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.flx-menu__list {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+.flx-menu a {
+  text-decoration: none;
+  color: inherit;
+}
+.flx-menu a:hover {
+  color: var(--primary, #0066ff);
+}
+.flx-menu__item {
+  position: relative;
+}
+.flx-menu__item.has-children > a::after {
+  content: " ▾";
+  font-size: 0.7em;
+  opacity: 0.6;
+}
+.flx-submenu {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  min-width: 12rem;
+  background: var(--background, #fff);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  display: none;
+  flex-direction: column;
+  gap: 0.25rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+.flx-menu__item:hover > .flx-submenu {
+  display: flex;
+}
+.flx-submenu--mega {
+  display: none;
+  flex-direction: row;
+  flex-wrap: wrap;
+  min-width: 32rem;
+  gap: 1.5rem;
+}
+.flx-menu__item:hover > .flx-submenu--mega {
+  display: flex;
+}
+
+/* Button */
+.flx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.flx-btn--primary {
+  background: var(--primary, #0066ff);
+  color: #fff;
+}
+.flx-btn--secondary {
+  background: var(--secondary, #111);
+  color: #fff;
+}
+.flx-btn--outline {
+  border: 1px solid currentColor;
+  color: var(--primary, #0066ff);
+}
+
+/* Misc components */
+.flx-search__input {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 0.5rem;
+}
+.flx-social {
+  display: flex;
+  gap: 0.75rem;
+}
+.flx-social__link,
+.flx-lang__link,
+.flx-phone,
+.flx-email,
+.flx-cart,
+.flx-login {
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.9rem;
+}
+.flx-lang {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .flx-menu__list {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}

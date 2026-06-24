@@ -5,6 +5,8 @@ import { hasPermission } from "@/lib/rbac";
 import { NAV, type NavGroup } from "@/components/admin/nav-items";
 import { Sidebar } from "@/components/admin/sidebar";
 import { UserMenu } from "@/components/admin/user-menu";
+import { hooks, HOOKS } from "@/server/hooks";
+import { ensurePluginsLoaded } from "@/server/services/plugins";
 
 export default async function AdminLayout({
   children,
@@ -15,14 +17,21 @@ export default async function AdminLayout({
 
   // Filter nav by the user's permissions (items without a permission are public
   // to any authenticated user). Drop empty groups.
-  const groups: NavGroup[] = NAV.map((group) => ({
-    heading: group.heading,
-    items: group.items.filter(
-      (item) =>
-        !item.permission ||
-        hasPermission(user.roles, user.permissions, item.permission),
-    ),
-  })).filter((group) => group.items.length > 0);
+  // Let plugins extend the nav first, then permission-filter the result so
+  // plugin-added items also respect the user's permissions.
+  await ensurePluginsLoaded();
+  const fullNav = await hooks.applyFilters<NavGroup[]>(HOOKS.adminMenu, NAV);
+
+  const groups: NavGroup[] = fullNav
+    .map((group) => ({
+      heading: group.heading,
+      items: group.items.filter(
+        (item) =>
+          !item.permission ||
+          hasPermission(user.roles, user.permissions, item.permission),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <div className="bg-muted/20 grid min-h-svh grid-cols-1 md:grid-cols-[16rem_1fr]">

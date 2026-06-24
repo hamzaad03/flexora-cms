@@ -10,6 +10,7 @@ import {
   updateEntryAction,
 } from "@/app/admin/(protected)/content/[type]/actions";
 import { RichText } from "@/components/admin/editor/rich-text";
+import { SeoPanel } from "./seo-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +45,17 @@ export type EntryData = {
   publishedAt: string | null;
   terms: Record<string, string[]>;
   fields: Record<string, unknown>;
+  seo: SeoData;
+};
+
+export type SeoData = {
+  title: string;
+  description: string;
+  canonical: string;
+  robots: string;
+  ogImage: string;
+  focusKeyword: string;
+  schema: string;
 };
 
 function toLocalInput(iso: string | null): string {
@@ -91,6 +103,7 @@ export function EntryEditor({
   const [fieldValues, setFieldValues] = useState<Record<string, unknown>>(
     entry.fields,
   );
+  const [seo, setSeo] = useState<SeoData>(entry.seo);
 
   const isNew = !entry.id;
 
@@ -118,6 +131,7 @@ export function EntryEditor({
         ]),
       ),
       fields: fieldValues,
+      seo,
     };
 
     startTransition(async () => {
@@ -168,6 +182,13 @@ export function EntryEditor({
             placeholder="Short summary used in listings and SEO."
           />
         </div>
+
+        <SeoPanel
+          value={seo}
+          onChange={setSeo}
+          title={title}
+          contentHtml={contentHtml}
+        />
       </div>
 
       {/* Sidebar */}

@@ -3,13 +3,39 @@ import { NextResponse } from "next/server";
 import { resolveRoute } from "@/server/services/public-router";
 import { getActiveTheme } from "@/server/services/theme";
 import { renderEntry, renderNotFound } from "@/server/theme/render";
+import { matchRedirect } from "@/server/services/redirect";
+import { injectSiteScripts } from "@/server/services/site-scripts";
+import { hooks, HOOKS } from "@/server/hooks";
+import { ensurePluginsLoaded } from "@/server/services/plugins";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function htmlResponse(body: string, status = 200) {
-  return new NextResponse(body, {
+// Inject layout CSS when a region is present, and the lazy GSAP runtime when
+// any element carries an animation. Theme-agnostic post-processing.
+function enhanceLayout(html: string): string {
+  let out = html;
+  if (out.includes("flx-region") && !out.includes("/flx-layout.css")) {
+    const link = '<link rel="stylesheet" href="/flx-layout.css" />';
+    out = out.includes("</head>")
+      ? out.replace("</head>", `${link}</head>`)
+      : link + out;
+  }
+  if (out.includes("data-anim=") && !out.includes("/flx-anim.js")) {
+    const script = '<script src="/flx-anim.js" defer></script>';
+    out = out.includes("</body>")
+      ? out.replace("</body>", `${script}</body>`)
+      : out + script;
+  }
+  return out;
+}
+
+async function finalize(html: string, status = 200) {
+  let out = await injectSiteScripts(enhanceLayout(html));
+  await ensurePluginsLoaded();
+  out = await hooks.applyFilters(HOOKS.pageHtml, out);
+  return new NextResponse(out, {
     status,
     headers: { "Content-Type": "text/html; charset=utf-8" },
   });
@@ -27,32 +53,38 @@ function noThemePage() {
 // specific routes (/admin, /api, /setup, /theme-assets) take precedence; this
 // optional catch-all handles everything else.
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ slug?: string[] }> },
 ) {
   const { slug } = await params;
   const segments = slug ?? [];
+  const path = "/" + segments.join("/");
+
+  // 1) Redirects take precedence.
+  const redirect = await matchRedirect(path);
+  if (redirect) {
+    return NextResponse.redirect(
+      new URL(redirect.to, req.url),
+      redirect.code === 302 ? 302 : 301,
+    );
+  }
 
   const theme = await getActiveTheme();
-  if (!theme) return htmlResponse(noThemePage(), 503);
+  if (!theme) return finalize(noThemePage(), 503);
 
   try {
     const resolved = await resolveRoute(segments);
     if (!resolved) {
-      const body = await renderNotFound();
-      return htmlResponse(body, 404);
+      return finalize(await renderNotFound(), 404);
     }
     const body = await renderEntry(
       resolved.entry,
       resolved.typeSlug,
       resolved.templateType,
     );
-    return htmlResponse(body, 200);
+    return finalize(body, 200);
   } catch (err) {
-    logger.error(
-      { err, path: "/" + segments.join("/") },
-      "Public render failed",
-    );
-    return htmlResponse("<h1>Something went wrong</h1>", 500);
+    logger.error({ err, path }, "Public render failed");
+    return finalize("<h1>Something went wrong</h1>", 500);
   }
 }

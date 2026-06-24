@@ -49,3 +49,33 @@ const options: sanitizeHtml.IOptions = {
 export function sanitizeRichText(dirty: string): string {
   return sanitizeHtml(dirty ?? "", options);
 }
+
+// Broader allowlist for "Custom HTML" layout blocks: structural tags + class,
+// still no scripts/styles/event handlers.
+const blockOptions: sanitizeHtml.IOptions = {
+  allowedTags: [
+    ...(options.allowedTags as string[]),
+    "div",
+    "section",
+    "header",
+    "footer",
+    "nav",
+    "article",
+    "aside",
+    "figure",
+    "figcaption",
+    "small",
+    "button",
+  ],
+  allowedAttributes: {
+    "*": ["class", "id", "aria-label", "role"],
+    a: ["href", "target", "rel"],
+    img: ["src", "alt", "title", "width", "height"],
+    button: ["type"],
+  },
+  allowedSchemes: ["http", "https", "mailto", "tel"],
+};
+
+export function sanitizeBlockHtml(dirty: string): string {
+  return sanitizeHtml(dirty ?? "", blockOptions);
+}

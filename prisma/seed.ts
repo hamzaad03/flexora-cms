@@ -253,6 +253,75 @@ async function seedSampleContent() {
   console.log("✓ Sample content: home, about, hello-world + menu items");
 }
 
+async function seedFormsDemo() {
+  const fid = () => `f_${Math.random().toString(36).slice(2, 9)}`;
+  const existing = await db.form.findUnique({ where: { slug: "contact" } });
+  if (!existing) {
+    await db.form.create({
+      data: {
+        slug: "contact",
+        name: "Contact form",
+        isActive: true,
+        fields: [
+          {
+            id: fid(),
+            type: "text",
+            name: "name",
+            label: "Name",
+            required: true,
+            width: "half",
+          },
+          {
+            id: fid(),
+            type: "email",
+            name: "email",
+            label: "Email",
+            required: true,
+            width: "half",
+          },
+          {
+            id: fid(),
+            type: "textarea",
+            name: "message",
+            label: "Message",
+            required: true,
+            width: "full",
+          },
+        ],
+        settings: {
+          submitLabel: "Send message",
+          successMessage: "Thanks — we'll be in touch shortly.",
+        },
+      },
+    });
+    console.log("✓ Sample form: contact");
+  }
+
+  // Enable the Form Builder plugin so the shortcode renders out of the box.
+  await db.plugin.upsert({
+    where: { slug: "form-builder" },
+    update: { isEnabled: true },
+    create: {
+      slug: "form-builder",
+      name: "Form Builder",
+      version: "1.0.0",
+      isEnabled: true,
+    },
+  });
+
+  // Drop the shortcode onto the About page if not already there.
+  const about = await db.contentEntry.findFirst({ where: { slug: "about" } });
+  if (about && !(about.contentHtml ?? "").includes("[flxform")) {
+    await db.contentEntry.update({
+      where: { id: about.id },
+      data: {
+        contentHtml: `${about.contentHtml ?? ""}\n<h2>Get in touch</h2>\n<p>[flxform slug="contact"]</p>`,
+      },
+    });
+    console.log("✓ Added contact form to the About page");
+  }
+}
+
 async function seedSuperAdmin() {
   const email = process.env.SEED_ADMIN_EMAIL;
   const password = process.env.SEED_ADMIN_PASSWORD;
@@ -288,6 +357,7 @@ async function main() {
   await seedSettings();
   await seedSuperAdmin();
   await seedSampleContent();
+  await seedFormsDemo();
   console.log("Done.");
 }
 

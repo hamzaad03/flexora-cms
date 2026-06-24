@@ -6,6 +6,9 @@ import { uniqueSlug } from "@/lib/slug";
 import { sanitizeRichText } from "@/lib/sanitize";
 import type { EntryInput } from "@/lib/validations/content";
 import { setEntryTerms } from "./taxonomy";
+import { saveSeo } from "./seo";
+import { hooks, HOOKS } from "@/server/hooks";
+import { ensurePluginsLoaded } from "./plugins";
 
 export type ListEntriesOptions = {
   status?: EntryStatus;
@@ -36,6 +39,25 @@ export async function listEntries(
   return { items, total };
 }
 
+/** Pages + posts usable as menu link targets. */
+export async function listLinkableEntries() {
+  const rows = await db.contentEntry.findMany({
+    where: { contentType: { slug: { in: ["page", "post"] } } },
+    orderBy: { title: "asc" },
+    select: {
+      id: true,
+      title: true,
+      contentType: { select: { slug: true } },
+    },
+    take: 200,
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    label: r.title,
+    type: r.contentType.slug,
+  }));
+}
+
 export async function getEntry(id: string) {
   return db.contentEntry.findUnique({
     where: { id },
@@ -45,6 +67,7 @@ export async function getEntry(id: string) {
       author: { select: { id: true, name: true, email: true } },
       terms: { include: { term: { include: { taxonomy: true } } } },
       fieldValues: true,
+      seo: true,
     },
   });
 }
@@ -166,6 +189,7 @@ export async function createEntry(
 
   await saveFieldValues(entry.id, contentType.id, input.fields);
   await applyTerms(entry.id, input.terms);
+  await saveSeo(entry.id, input.seo, entry.title, entry.contentHtml ?? "");
 
   await db.revision.create({
     data: {
@@ -174,6 +198,9 @@ export async function createEntry(
       snapshot: await snapshotEntry(entry.id),
     },
   });
+
+  await ensurePluginsLoaded();
+  await hooks.doAction(HOOKS.contentAfterSave, entry);
 
   return entry;
 }
@@ -232,6 +259,10 @@ export async function updateEntry(
 
   await saveFieldValues(entry.id, existing.contentTypeId, input.fields);
   await applyTerms(entry.id, input.terms);
+  await saveSeo(entry.id, input.seo, entry.title, entry.contentHtml ?? "");
+
+  await ensurePluginsLoaded();
+  await hooks.doAction(HOOKS.contentAfterSave, entry);
 
   return entry;
 }

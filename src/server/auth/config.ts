@@ -8,12 +8,16 @@ import type { NextAuthConfig } from "next-auth";
 // It MUST return true for the login page itself, otherwise NextAuth keeps
 // redirecting the sign-in page to itself (infinite redirect loop).
 export const authConfig = {
+  // Trust the deployment host (behind a reverse proxy on VPS/shared hosting).
+  trustHost: true,
   pages: {
     signIn: "/admin/login",
   },
   session: {
     strategy: "jwt",
   },
+  // Secure cookies in production (served over HTTPS).
+  useSecureCookies: process.env.NODE_ENV === "production",
   providers: [],
   callbacks: {
     authorized({ auth, request }) {

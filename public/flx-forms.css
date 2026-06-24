@@ -1,0 +1,102 @@
+/* FlxOraCMS forms (rendered by the form-builder plugin). */
+.flx-form {
+  max-width: 40rem;
+  margin-block: 1.5rem;
+}
+.flx-form__hp {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.flx-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.flx-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.flx-form__field--full {
+  grid-column: 1 / -1;
+}
+.flx-form__field--check {
+  flex-direction: row;
+  align-items: center;
+}
+.flx-form label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.flx-form input[type="text"],
+.flx-form input[type="email"],
+.flx-form input[type="tel"],
+.flx-form input[type="number"],
+.flx-form input[type="date"],
+.flx-form select,
+.flx-form textarea {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 0.5rem;
+  font: inherit;
+  background: var(--background, #fff);
+  color: inherit;
+}
+.flx-form input:focus,
+.flx-form select:focus,
+.flx-form textarea:focus {
+  outline: 2px solid var(--primary, #0066ff);
+  outline-offset: 1px;
+}
+.flx-form__radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.flx-form__radio {
+  font-weight: 400;
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+.flx-form__req {
+  color: #ef4444;
+}
+.flx-form__error {
+  color: #ef4444;
+  font-size: 0.8rem;
+  min-height: 1em;
+}
+.flx-form__submit {
+  margin-top: 1rem;
+  padding: 0.6rem 1.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--primary, #0066ff);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.flx-form__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.flx-form__status {
+  margin-top: 0.75rem;
+  font-size: 0.95rem;
+}
+.flx-form__status.is-success {
+  color: #15803d;
+}
+.flx-form__status.is-error {
+  color: #b91c1c;
+}
+@media (max-width: 560px) {
+  .flx-form__grid {
+    grid-template-columns: 1fr;
+  }
+}

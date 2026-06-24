@@ -2,9 +2,36 @@ import "server-only";
 import type { ContentEntry } from "@prisma/client";
 
 import { getActiveTheme } from "@/server/services/theme";
+import { getSeo } from "@/server/services/seo";
+import { renderRegion } from "@/server/services/layout";
+import { hooks, HOOKS } from "@/server/hooks";
+import { ensurePluginsLoaded } from "@/server/services/plugins";
+import type { LayoutRenderCtx } from "@/server/layout/registry";
+import type { ResolvedMenuItem } from "@/server/services/menu";
 import { parseManifest } from "./manifest";
 import { getEngine } from "./engine";
-import { buildBaseContext, type PageContext } from "./context";
+import {
+  buildBaseContext,
+  type BaseContext,
+  type PageContext,
+} from "./context";
+
+/** Resolve + render the header/footer regions for a request. */
+async function buildRegions(
+  base: BaseContext,
+  contentTypeId: string | null,
+  entryId: string | null,
+) {
+  const ctx: LayoutRenderCtx = {
+    site: base.site,
+    menus: base.menus as Record<string, ResolvedMenuItem[]>,
+  };
+  const [header, footer] = await Promise.all([
+    renderRegion("HEADER", contentTypeId, entryId, ctx),
+    renderRegion("FOOTER", contentTypeId, entryId, ctx),
+  ]);
+  return { header, footer };
+}
 
 export class NoActiveThemeError extends Error {
   constructor() {
@@ -61,8 +88,29 @@ export async function renderEntry(
 
   const base = await buildBaseContext();
   const page = entryToPageContext(entry, typeSlug);
+  const region = await buildRegions(base, entry.contentTypeId, entry.id);
 
-  return engine.renderFile(templatePath, { ...base, page });
+  const meta = await getSeo(entry.id);
+  const seo = {
+    title: meta?.title || page.title,
+    description: meta?.description || page.excerpt || base.site.tagline,
+    canonical: meta?.canonical || `${base.site.url}${page.url}`,
+    robots: meta?.robots || "index,follow",
+    og_image: meta?.ogImage || page.featured_image,
+    // Escape "<" so a JSON-LD value can't break out of the <script> tag.
+    schema: meta?.schema
+      ? JSON.stringify(meta.schema).replace(/</g, "\\u003c")
+      : null,
+  };
+
+  await ensurePluginsLoaded();
+  const context = await hooks.applyFilters(HOOKS.pageContext, {
+    ...base,
+    page,
+    region,
+    seo,
+  });
+  return engine.renderFile(templatePath, context);
 }
 
 /** Render the theme's 404 template. */
@@ -78,8 +126,10 @@ export async function renderNotFound(
 
   const engine = getEngine(theme.slug);
   const base = await buildBaseContext();
+  const region = await buildRegions(base, null, null);
   return engine.renderFile(templatePath, {
     ...base,
+    region,
     page: { title, slug: "", url: "", type: "404", content: "" },
   });
 }
@@ -99,9 +149,11 @@ export async function renderArchive(
 
   const base = await buildBaseContext();
   const posts = entries.map((e) => entryToPageContext(e, typeSlug));
+  const region = await buildRegions(base, null, null);
 
   return engine.renderFile(templatePath, {
     ...base,
+    region,
     page: { title: opts.title, slug: "", url: "", type: typeSlug },
     posts,
   });

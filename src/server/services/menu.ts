@@ -1,11 +1,13 @@
 import "server-only";
 
 import { db } from "@/lib/db";
+import { slugify } from "@/lib/slug";
 
 export type ResolvedMenuItem = {
   label: string;
   url: string;
   target: string;
+  config: Record<string, unknown> | null;
   children: ResolvedMenuItem[];
 };
 
@@ -60,8 +62,97 @@ export async function resolveMenu(slug: string): Promise<ResolvedMenuItem[]> {
       label: item.label,
       url: urlFor(item),
       target: item.target ?? "_self",
+      config: (item.config as Record<string, unknown> | null) ?? null,
       children: build(item.id),
     }));
 
   return build(null);
+}
+
+// ---- Admin: menu + item management ----
+
+export type MenuTreeNode = {
+  label: string;
+  type: string; // page | post | category | url | custom
+  url: string | null;
+  reference: string | null;
+  target: string;
+  config: Record<string, unknown> | null;
+  children: MenuTreeNode[];
+};
+
+export async function listMenus() {
+  return db.menu.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { items: true } } },
+  });
+}
+
+export async function createMenu(name: string) {
+  const slug = slugify(name) || "menu";
+  return db.menu.upsert({
+    where: { slug },
+    update: {},
+    create: { slug, name },
+  });
+}
+
+/** Editable tree (raw fields) for the menu builder. */
+export async function getMenuTree(menuId: string): Promise<MenuTreeNode[]> {
+  const items = await db.menuItem.findMany({
+    where: { menuId },
+    orderBy: { sortOrder: "asc" },
+  });
+  const byParent = new Map<string | null, typeof items>();
+  for (const item of items) {
+    const key = item.parentId ?? null;
+    const list = byParent.get(key) ?? [];
+    list.push(item);
+    byParent.set(key, list);
+  }
+  const build = (parentId: string | null): MenuTreeNode[] =>
+    (byParent.get(parentId) ?? []).map((i) => ({
+      label: i.label,
+      type: i.type,
+      url: i.url,
+      reference: i.reference,
+      target: i.target ?? "_self",
+      config: (i.config as Record<string, unknown> | null) ?? null,
+      children: build(i.id),
+    }));
+  return build(null);
+}
+
+/** Replace a menu's items with the given tree (flattened, recreated). */
+export async function saveMenuTree(menuId: string, tree: MenuTreeNode[]) {
+  await db.menuItem.deleteMany({ where: { menuId } });
+
+  const createLevel = async (
+    nodes: MenuTreeNode[],
+    parentId: string | null,
+  ) => {
+    let order = 0;
+    for (const node of nodes) {
+      const created = await db.menuItem.create({
+        data: {
+          menuId,
+          parentId,
+          label: node.label,
+          type: node.type,
+          url: node.url,
+          reference: node.reference,
+          target: node.target,
+          config: (node.config ?? undefined) as object | undefined,
+          sortOrder: order++,
+        },
+      });
+      if (node.children?.length) await createLevel(node.children, created.id);
+    }
+  };
+
+  await createLevel(tree, null);
+}
+
+export async function getMenuById(id: string) {
+  return db.menu.findUnique({ where: { id } });
 }

@@ -39,13 +39,14 @@ test("create + publish a page, then it renders on the public site", async ({
 
   await page.getByRole("button", { name: "Create" }).click();
 
-  // Redirects to the edit page once created.
-  await page.waitForURL(/\/admin\/content\/page\/[^/]+$/, { timeout: 15000 });
+  // Wait for the real save to finish: the editor redirects from /new to the
+  // new entry's id (a cuid, never "new").
+  await page.waitForURL(/\/admin\/content\/page\/c[a-z0-9]{12,}$/, {
+    timeout: 15000,
+  });
 
   // The published page renders through the active theme.
   await page.goto(`/${slug}`);
   await expect(page.locator("h1")).toContainText(title);
-  await expect(page.locator("body")).toContainText(
-    "Hello from the E2E test.",
-  );
+  await expect(page.locator("body")).toContainText("Hello from the E2E test.");
 });

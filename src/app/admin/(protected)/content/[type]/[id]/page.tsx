@@ -58,6 +58,15 @@ export default async function EditEntryPage({
     publishedAt: entry.publishedAt?.toISOString() ?? null,
     terms: termsMap,
     fields: fieldMap,
+    seo: {
+      title: entry.seo?.title ?? "",
+      description: entry.seo?.description ?? "",
+      canonical: entry.seo?.canonical ?? "",
+      robots: entry.seo?.robots ?? "",
+      ogImage: entry.seo?.ogImage ?? "",
+      focusKeyword: entry.seo?.focusKeyword ?? "",
+      schema: entry.seo?.schema ? JSON.stringify(entry.seo.schema) : "",
+    },
   };
 
   const revisions: RevisionRow[] = (await listRevisions(id)).map((r) => ({

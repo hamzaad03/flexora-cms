@@ -203,6 +203,7 @@ model ContentEntry {
 
   @@unique([contentTypeId, slug])
   @@index([status, publishedAt])
+  @@index([contentTypeId, status])
   @@index([authorId])
   @@map("content_entries")
 }
@@ -470,6 +471,40 @@ model Setting {
   value Json
 
   @@map("settings")
+}
+
+// ----------------------------------------------------------------------------
+// Forms (form builder plugin)
+// ----------------------------------------------------------------------------
+
+model Form {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  fields    Json // FormField[]
+  settings  Json? // { successMessage, submitLabel, requireCaptcha }
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  submissions FormSubmission[]
+
+  @@map("forms")
+}
+
+model FormSubmission {
+  id        String   @id @default(cuid())
+  formId    String   @map("form_id")
+  data      Json
+  ipHash    String?  @map("ip_hash")
+  userAgent String?  @map("user_agent") @db.Text
+  spam      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId, createdAt])
+  @@map("form_submissions")
 }
 
 model Plugin {

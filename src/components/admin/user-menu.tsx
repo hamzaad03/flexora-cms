@@ -1,6 +1,16 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import {
+  ChevronsUpDown,
+  ExternalLink,
+  LayoutDashboard,
+  Loader2,
+  LogOut,
+  Settings,
+  User,
+} from "lucide-react";
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import { logout } from "@/server/auth/actions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -8,57 +18,157 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
-export function UserMenu({
-  name,
-  email,
-}: {
-  name?: string | null;
-  email: string;
-}) {
-  const initials = (name ?? email)
-    .split(" ")
+function initialsFor(name: string | null | undefined, email: string) {
+  const source = (name?.trim() || email).replace(/@.*/, "");
+  return source
+    .split(/[\s._-]+/)
+    .filter(Boolean)
     .map((p) => p.charAt(0))
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+function formatRole(role: string | undefined) {
+  if (!role) return "Team member";
+  return role
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+export function UserMenu({
+  name,
+  email,
+  roles = [],
+  canManageSettings = false,
+  variant = "icon",
+}: {
+  name?: string | null;
+  email: string;
+  roles?: string[];
+  canManageSettings?: boolean;
+  variant?: "icon" | "sidebar";
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const displayName = name?.trim() || "Account";
+  const initials = initialsFor(name, email);
+  const role = formatRole(roles[0]);
+
+  const signOut = () => {
+    startTransition(async () => {
+      await logout();
+    });
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={(props) => (
-          <Button
-            {...props}
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-          >
-            <Avatar className="size-8">
-              <AvatarFallback>{initials}</AvatarFallback>
-            </Avatar>
-          </Button>
-        )}
+        render={(props) =>
+          variant === "sidebar" ? (
+            <button
+              {...props}
+              type="button"
+              className={cn(
+                "hover:bg-muted/70 aria-expanded:bg-muted/70 flex w-full items-center gap-3 rounded-lg p-2 text-left outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
+              )}
+            >
+              <Avatar size="lg">
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">
+                  {displayName}
+                </span>
+                <span className="text-muted-foreground block truncate text-xs">
+                  {email}
+                </span>
+              </span>
+              <ChevronsUpDown className="text-muted-foreground size-4" />
+            </button>
+          ) : (
+            <Button
+              {...props}
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              aria-label="Open account menu"
+            >
+              <Avatar className="size-8">
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+            </Button>
+          )
+        }
       />
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">{name ?? "Account"}</span>
-            <span className="text-muted-foreground text-xs">{email}</span>
-          </div>
-        </DropdownMenuLabel>
+      <DropdownMenuContent
+        align={variant === "sidebar" ? "start" : "end"}
+        side={variant === "sidebar" ? "top" : "bottom"}
+        className="w-64"
+      >
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="p-2">
+            <div className="flex items-center gap-3">
+              <Avatar>
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <span className="block truncate text-sm font-medium text-foreground">
+                  {displayName}
+                </span>
+                <span className="text-muted-foreground block truncate text-xs">
+                  {email}
+                </span>
+                <span className="text-muted-foreground block truncate text-xs">
+                  {role}
+                </span>
+              </div>
+            </div>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push("/admin/account")}>
+          <User className="size-4" />
+          Account
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push("/admin")}>
+          <LayoutDashboard className="size-4" />
+          Dashboard
+        </DropdownMenuItem>
+        {canManageSettings ? (
+          <DropdownMenuItem onClick={() => router.push("/admin/settings")}>
+            <Settings className="size-4" />
+            Settings
+          </DropdownMenuItem>
+        ) : null}
+        <DropdownMenuItem
+          onClick={() => {
+            window.open("/", "_blank", "noopener,noreferrer");
+          }}
+        >
+          <ExternalLink className="size-4" />
+          View site
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           variant="destructive"
-          onClick={() => {
-            void logout();
-          }}
+          disabled={pending}
+          onClick={signOut}
         >
-          <LogOut className="size-4" />
+          {pending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <LogOut className="size-4" />
+          )}
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>

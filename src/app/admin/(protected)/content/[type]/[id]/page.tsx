@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Wand2 } from "lucide-react";
 
 import { getCurrentUser } from "@/server/auth/guard";
 import { hasPermission } from "@/lib/rbac";
+import { BUILDER_ENABLED } from "@/lib/builder/config";
 import { getEntry, listRevisions } from "@/server/services/content";
 import { getEditorContext } from "@/server/services/editor-context";
 import {
@@ -77,13 +78,23 @@ export default async function EditEntryPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button asChild variant="ghost" size="icon">
-          <Link href={`/admin/content/${type}`}>
-            <ArrowLeft className="size-4" />
-          </Link>
-        </Button>
-        <h1 className="truncate text-2xl font-semibold">{entry.title}</h1>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <Button asChild variant="ghost" size="icon">
+            <Link href={`/admin/content/${type}`}>
+              <ArrowLeft className="size-4" />
+            </Link>
+          </Button>
+          <h1 className="truncate text-2xl font-semibold">{entry.title}</h1>
+        </div>
+        {BUILDER_ENABLED ? (
+          <Button asChild variant="outline">
+            <Link href={`/admin/content/${type}/${id}/builder`}>
+              <Wand2 className="size-4" />
+              Visual builder
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       <EntryEditor

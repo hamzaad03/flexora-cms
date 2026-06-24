@@ -75,6 +75,10 @@ class HookBus {
 export const HOOKS = {
   contentAfterSave: "content.afterSave",
   contentAfterDelete: "content.afterDelete",
+  userAfterSave: "user.afterSave",
+  userAfterDelete: "user.afterDelete",
+  roleAfterSave: "role.afterSave",
+  roleAfterDelete: "role.afterDelete",
   pageContext: "page.context",
   pageHtml: "page.html",
   adminMenu: "admin.menu",

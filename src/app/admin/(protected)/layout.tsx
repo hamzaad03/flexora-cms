@@ -32,16 +32,32 @@ export default async function AdminLayout({
       ),
     }))
     .filter((group) => group.items.length > 0);
+  const canManageSettings = hasPermission(
+    user.roles,
+    user.permissions,
+    "settings.manage",
+  );
 
   return (
     <div className="bg-muted/20 grid min-h-svh grid-cols-1 md:grid-cols-[16rem_1fr]">
-      <aside className="bg-background hidden border-r md:block">
+      <aside className="bg-background hidden min-h-svh border-r md:flex md:flex-col">
         <div className="flex h-14 items-center border-b px-4">
           <Link href="/admin" className="font-semibold">
             FlxOraCMS
           </Link>
         </div>
-        <Sidebar groups={groups} />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <Sidebar groups={groups} />
+        </div>
+        <div className="border-t p-3">
+          <UserMenu
+            name={user.name}
+            email={user.email}
+            roles={user.roles}
+            canManageSettings={canManageSettings}
+            variant="sidebar"
+          />
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-col">
@@ -50,7 +66,12 @@ export default async function AdminLayout({
             FlxOraCMS
           </span>
           <div className="ml-auto">
-            <UserMenu name={user.name} email={user.email} />
+            <UserMenu
+              name={user.name}
+              email={user.email}
+              roles={user.roles}
+              canManageSettings={canManageSettings}
+            />
           </div>
         </header>
         <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>

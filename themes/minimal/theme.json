@@ -1,0 +1,16 @@
+{
+  "name": "Minimal",
+  "slug": "minimal",
+  "version": "1.0.0",
+  "author": "FlxOraCMS",
+  "description": "A second theme to demonstrate switching without touching content.",
+  "templates": {
+    "home": "templates/main.liquid",
+    "page": "templates/main.liquid",
+    "post": "templates/main.liquid",
+    "archive": "templates/main.liquid",
+    "404": "templates/404.liquid"
+  },
+  "regions": ["header", "footer"],
+  "menus": ["main"]
+}

@@ -1,0 +1,12 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{% if seo.title %}{{ seo.title }}{% else %}{{ page.title }}{% endif %} — {{ site.title }}</title>
+{% if seo.description %}<meta name="description" content="{{ seo.description }}" />{% endif %}
+{% if seo.robots %}<meta name="robots" content="{{ seo.robots }}" />{% endif %}
+{% if seo.canonical %}<link rel="canonical" href="{{ seo.canonical }}" />{% endif %}
+<meta property="og:title" content="{% if seo.title %}{{ seo.title }}{% else %}{{ page.title }}{% endif %}" />
+{% if seo.description %}<meta property="og:description" content="{{ seo.description }}" />{% endif %}
+{% if seo.og_image %}<meta property="og:image" content="{{ seo.og_image }}" />{% endif %}
+{% if seo.schema %}<script type="application/ld+json">{{ seo.schema }}</script>{% endif %}
+<link rel="stylesheet" href="{{ 'css/style.css' | asset }}" />
+<style>{{ customizer.css }}</style>

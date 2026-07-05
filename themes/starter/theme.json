@@ -1,0 +1,16 @@
+{
+  "name": "Starter",
+  "slug": "starter",
+  "version": "1.0.0",
+  "author": "FlxOraCMS",
+  "description": "A clean, minimal starter theme demonstrating the theme contract.",
+  "templates": {
+    "home": "templates/home.liquid",
+    "page": "templates/page.liquid",
+    "post": "templates/post.liquid",
+    "archive": "templates/archive.liquid",
+    "404": "templates/404.liquid"
+  },
+  "regions": ["header", "footer"],
+  "menus": ["main", "footer"]
+}

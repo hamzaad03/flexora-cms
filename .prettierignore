@@ -1,0 +1,8 @@
+.next
+node_modules
+.git
+storage
+package-lock.json
+prisma/migrations
+public/vendor
+*.md

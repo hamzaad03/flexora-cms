@@ -183,8 +183,9 @@ model ContentEntry {
   templateId    String?     @map("template_id")
   parentId      String?     @map("parent_id")
   excerpt       String?     @db.Text
-  contentHtml   String?     @map("content_html") @db.LongText // Tiptap output (MVP)
-  contentJson   Json?       @map("content_json") // block tree (Phase 2)
+  contentHtml   String?     @map("content_html") @db.LongText // Tiptap output / builder write-back
+  contentJson   Json?       @map("content_json") // visual builder document (v2 node tree)
+  editorMode    String      @default("classic") @map("editor_mode") // "classic" | "builder"
   featuredMedia String?     @map("featured_media")
   publishedAt   DateTime?   @map("published_at")
   createdAt     DateTime    @default(now()) @map("created_at")

@@ -14,6 +14,13 @@ const envSchema = z.object({
   LOG_LEVEL: z
     .enum(["trace", "debug", "info", "warn", "error", "fatal"])
     .default("info"),
+  SERVER_ACTIONS_BODY_SIZE_LIMIT: z
+    .string()
+    .regex(
+      /^(?:\d+|\d+(?:\.\d+)?[kKmMgGtTpP][bB])$/,
+      "SERVER_ACTIONS_BODY_SIZE_LIMIT must be a byte count or size string such as 500kb, 10mb, or 25mb",
+    )
+    .default("25mb"),
 });
 
 function loadEnv() {

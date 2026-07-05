@@ -130,19 +130,96 @@ architecture detail.
 
 ## 8. Full Visual Page Builder
 
-### 8A. Builder Foundation (Testable First Slice)
-- [x] Add builder feature flag/config so the visual editor can be enabled without
-      disrupting the existing content editor.
-- [x] Add initial builder document schema with only page, section, container, and
-      rich-text block nodes.
-- [x] Add unit tests for schema parsing, invalid JSON handling, empty page handling,
-      and version metadata.
-- [x] Add a minimal server action to save/load `contentJson` for a page with
-      `content.edit` / `content.edit_own` enforcement.
-- [x] Add a basic `/admin/content/[type]/[id]/builder` route that loads one page
-      and shows a non-editable preview from its builder JSON.
-- [ ] Test manually: open an existing page, create an empty builder document, save,
-      reload, and confirm no existing title/slug/SEO/status data is changed.
+> **Locked architecture — decided with the user; do not deviate without updating this block.**
+> (Recursive node tree + token-first scoped-CSS compiler. Framework-neutral output.)
+>
+> **Why the v1 builder hit a wall (root cause):** it stored a *closed, flat, typed*
+> tree (`section → container → richText`, enum-only props) styled through *build-time
+> Tailwind classes*. Tailwind purges any class it didn't see at build, so runtime
+> user-chosen values can't exist — which forced the enum cage. A visual builder needs
+> the opposite: an **open, recursive node tree** styled through **runtime CSS**.
+> Tailwind stays for the **admin UI only**; it is NOT the saved page format.
+>
+> - **Framework-neutral saved format.** A node saves a **neutral JSON style object**,
+>   never Tailwind/React markup. The public page is portable HTML + compiled CSS.
+> - **Recursive node model.** One `BuilderNode` shape, nestable to a depth limit:
+>   ```ts
+>   type BuilderNode = {
+>     id: string;
+>     type: "section" | "container" | "grid" | "richText" | "heading"
+>         | "image" | "button" | "icon" | "shortcode" | "html" | "form" | "spacer";
+>     props: Record<string, unknown>;
+>     styles: { base?; sm?; md?; lg?; hover? };   // neutral CSS-property maps
+>     advancedCss?: string;                        // raw-CSS escape hatch (sanitized)
+>     children?: BuilderNode[];                     // any node can nest any node
+>   };
+>   ```
+>   Containers/grids/sections are just nodes that hold children; **adding content
+>   nests a Container, it does NOT spawn a new Section** (the v1 bug). True columns,
+>   cards, split heroes = nested flex containers, exactly like Elementor/Wix.
+> - **Token-first scoped-CSS compiler.** Builder controls write design tokens
+>   (CSS vars: `--space-*`, `--color-*`) by default for theme consistency; a per-node
+>   **raw-CSS escape hatch** covers pixel-perfect cases. **Both feed ONE pipeline** —
+>   `styles{}` + `advancedCss` compile to **scoped CSS** keyed by a generated class:
+>   ```html
+>   <section class="flx-node-abc123">…</section>
+>   <style>
+>   .flx-node-abc123 { padding: var(--space-6); background: var(--color-primary); }
+>   @media (min-width:768px){ .flx-node-abc123 { display:flex; gap:var(--space-4); } }
+>   .flx-node-abc123:hover { transform: translateY(-2px); }
+>   </style>
+>   ```
+>   The compiler **whitelists CSS properties + sanitizes values** (no `{}<>;@import`,
+>   `expression()`, `javascript:`, unsafe `url()`), so uploaded-theme pages stay safe.
+>   Raw CSS is **permission-gated** (advanced users/admins only).
+> - **Responsive + states.** Per-node breakpoint overrides (`sm/md/lg`) and `hover`
+>   compile to `@media`/`:hover` rules on the same scoped class.
+> - **Opt-in per entry.** `ContentEntry.editorMode` (`classic | builder`, default
+>   `classic`). Public site uses builder output **only** when `editorMode==="builder"`
+>   AND `BUILDER_ENABLED`. Opening the builder never changes the live page until an
+>   explicit builder-mode save. (Replaces the unsafe `builderHtml || contentHtml`.)
+> - **Write-back to `contentHtml`.** On save, render sanitized HTML into `contentHtml`
+>   so SEO scoring, sitemap, revisions, search, and excerpts keep working unchanged.
+> - **Unknown / disabled-block fallback.** Renderer skips unknown or disabled-plugin
+>   node types gracefully (render nothing) — a toggled-off plugin never breaks a page.
+> - **Shortcodes first-class.** Rich-text + a dedicated Shortcode/Form node pass `[…]`
+>   through unescaped into the `page.html` hook pipeline (`[flxform slug="…"]` works).
+> - **Reuse, don't duplicate.** Dynamic nodes reuse the layout component registry and
+>   the GSAP `data-anim`/`data-parallax` runtime — no parallel client framework.
+
+**MVP builder scope (in order):** 8A foundation (recursive model + scoped-CSS compiler +
+render safety) → 8B–8C canvas + selection (recursive) → 8D inline content editing →
+8E container add/nest/duplicate/reorder (flex layout) → 8F token-first style panel +
+raw-CSS escape hatch → 8G animation/parallax → core nodes: Rich Text, Heading, Image,
+Button, Icon, Shortcode, Custom HTML, Form, Spacer, Grid → 8H responsive breakpoints +
+hover → revisions + autosave. **Builder v2:** template-inherited overrides, global
+styles/theme-style sync, optimistic locking, more elements (tabs/accordion/video).
+
+### 8A. Foundation — recursive model + scoped-CSS compiler + render safety (DONE FIRST)
+- [x] Builder feature flag/config (`BUILDER_ENABLED`) without disrupting the classic editor.
+- [x] Save/load `contentJson` server action with `content.edit` / `content.edit_own`.
+- [x] `/admin/content/[type]/[id]/builder` route loads a page + previews builder JSON.
+- [ ] **Recursive `BuilderNode` schema** (`src/lib/builder/document.ts`): one nestable
+      node type; `styles{base,sm,md,lg,hover}` + `advancedCss` + `children`; zod types;
+      v1→v2 migration of stored docs; enforce max depth / children / payload limits.
+- [ ] **Token-first scoped-CSS compiler** (`src/lib/builder/styles.ts`): neutral style
+      JSON → scoped `.flx-node-<id>` CSS with `@media` (sm/md/lg) + `:hover`; whitelist
+      CSS properties; sanitize values + `advancedCss` (block `{}<>;@import`,
+      `expression()`, `javascript:`, unsafe `url()`).
+- [ ] **Recursive renderer** (`src/lib/builder/render.ts`) → `{ html, css }`; core nodes
+      section/container/grid/richText/heading/image/button/icon/shortcode/html/form/spacer;
+      unknown/disabled node types skipped; shortcode/form pass `[…]` through unescaped.
+- [ ] **Add `ContentEntry.editorMode` (`classic`|`builder`, default `classic`)** + db push.
+- [ ] **Gate public render on `editorMode === "builder"` AND `BUILDER_ENABLED`** + inject
+      the compiled `<style>` — removes the `builderHtml || contentHtml` precedence that
+      dropped classic content + shortcodes (broke `/about`).
+- [ ] **Write-back:** on builder save, render sanitized HTML into `contentHtml`
+      (SEO/sitemap/revisions/excerpts unaffected).
+- [ ] On first builder open, convert existing `contentHtml` into a Rich-Text node (no loss).
+- [ ] Restore the `/about` demo (clear the stray starter `contentJson`) once opt-in lands.
+- [ ] Tests: schema parse/migrate/limits; compiler scoping + sanitization; renderer html+css
+      + unknown-node skip + shortcode passthrough; selection recursion; opening/saving leaves
+      title/slug/SEO/status untouched; classic renders `contentHtml`, builder renders builder.
 
 ### 8B. Simple Canvas + Page Preview
 - [x] Build the first visual canvas with desktop preview only, stable toolbar,
@@ -154,15 +231,15 @@ architecture detail.
 - [x] Add screenshot check for an empty page and a page with one section/container.
 
 ### 8C. Click-to-Select Elements
-- [ ] Add click selection for page, section, container, inner container, and content
+- [x] Add click selection for page, section, container, inner container, and content
       block nodes.
-- [ ] Show a compact breadcrumb/selection path such as `Page > Section > Container >
+- [x] Show a compact breadcrumb/selection path such as `Page > Section > Container >
       Text`.
-- [ ] Add clear labels for node origin: page content, global region, template
+- [x] Add clear labels for node origin: page content, global region, template
       inherited, plugin block, or locked element.
-- [ ] Add keyboard selection movement: select parent, select next sibling, select
+- [x] Add keyboard selection movement: select parent, select next sibling, select
       previous sibling, and escape to clear selection.
-- [ ] Add tests for selecting nested nodes, selecting empty containers, and keeping
+- [x] Add tests for selecting nested nodes, selecting empty containers, and keeping
       selection stable after save/reload.
 
 ### 8D. Basic Content Editing
@@ -175,24 +252,37 @@ architecture detail.
 - [ ] Add tests for converting old content, editing text, saving, reloading, and
       rendering edited content publicly.
 
-### 8E. Section + Container Editing
-- [ ] Add section controls: add section, duplicate section, move up/down, delete,
-      and select parent/child.
-- [ ] Add container/inner-container controls: add container, duplicate, reorder,
-      delete, set width, set gap, and set stacking behavior.
-- [ ] Add safe empty states for deleted last section, empty container, invalid drop,
-      and missing child node.
-- [ ] Add tests for add/duplicate/delete/reorder section and container operations.
+### 8E. Container-First Layout Editing (primary builder interaction)
+- [ ] **Add Container** as the main action: insert a container into a section or
+      **nest it inside another container** (rows/columns/cards) — do NOT create a new
+      Section per add. Sections are an optional top-level band added separately.
+- [ ] Container controls: add, **nest**, duplicate, reorder (drag + keyboard),
+      delete, and select parent/child.
+- [ ] Quick layout presets for a container (one click): single column, 2/3/4 columns,
+      sidebar split, row, stack — all just preset flex `layout` values.
+- [ ] Add Element into a container (rich-text, image, button, shortcode, form, menu)
+      via an inline insert affordance.
+- [ ] Safe empty states: empty container shows an "add element / add container" drop
+      zone; deleting the last item never leaves an unselectable/broken canvas.
+- [ ] Section controls remain available but secondary: add/duplicate/move/delete band.
+- [ ] Tests for add/nest/duplicate/delete/reorder containers and elements, and that
+      "add" never spawns an extra Section.
 
 ### 8F. Beginner-Friendly Styling Controls
 - [ ] Add simple style panel for selected content: font family, font size, font
       style, font weight, text color, background color, alignment, and spacing.
-- [ ] Add section/container style panel: background color, background image, overlay,
-      padding, margin, min height, border, radius, shadow, and width.
+- [ ] **Container style panel (the core of flexible design):**
+      - **Layout (flex):** direction, wrap, justify, align, gap.
+      - **Size:** width, max-width, height, min-height.
+      - **Spacing/box:** padding, margin, border, radius, shadow.
+      - **Background:** color, gradient, image (media-library picker, focal/position,
+        size, repeat) + overlay color/opacity.
 - [ ] Add color picker with theme color tokens, recent colors, and manual hex input.
-- [ ] Clamp unsafe style values and validate styles server-side before saving.
-- [ ] Add tests for applying color, typography, background, spacing, and invalid
-      style rejection.
+- [ ] Clamp/validate all style values server-side (property + unit allowlist; reject
+      `expression()`, `url(javascript:)`, `<`, etc.) — emit as sanitized inline style
+      + CSS vars.
+- [ ] Add tests for applying flex layout, size, background image+overlay, color,
+      typography, spacing, and invalid-style rejection.
 
 ### 8G. Animation Slice
 - [ ] Add animation panel for selected content/section/container using existing GSAP
@@ -201,10 +291,14 @@ architecture detail.
       and reset-to-none.
 - [ ] Preview animation in the builder without requiring a public page reload.
 - [ ] Save animation as validated builder node config and render it as `data-anim`.
-- [ ] Add tests for applying/removing animation and public render injection of
-      `flx-anim.js` only when needed.
+- [ ] **Background parallax for containers** via GSAP ScrollTrigger: enabled / speed /
+      direction → emitted as `data-parallax`; the `flx-anim.js` runtime scrubs a GPU
+      `transform` (no `background-attachment: fixed`); disabled under
+      `prefers-reduced-motion`; SSR-safe (static background without JS).
+- [ ] Add tests for applying/removing animation + parallax and public render injection
+      of `flx-anim.js` only when needed.
 
-### 8H. Responsive Editing Slice
+### 8H. Responsive Editing Slice — _Builder v2 (post-MVP)_
 - [ ] Add desktop/tablet/mobile preview toggles.
 - [ ] Add responsive overrides for hide/show, column stacking, gaps, padding, font
       size, width, and ordering.
@@ -212,7 +306,7 @@ architecture detail.
 - [ ] Add tests for breakpoint override persistence and visual screenshot checks for
       desktop/tablet/mobile.
 
-### 8I. Template-Inherited Element Selection
+### 8I. Template-Inherited Element Selection — _Builder v2 (post-MVP)_
 - [ ] Add theme/developer contract for selectable inherited elements using stable
       `data-flx-*` attributes.
 - [ ] Allow clicking template-inherited elements in preview and show them as
@@ -236,7 +330,10 @@ architecture detail.
 - [ ] Add tests for media replacement, missing media, link validation, and public
       render output.
 
-### 8K. Forms, Menus, and Dynamic Content Blocks
+### 8K. Forms, Menus, Shortcodes, and Dynamic Content Blocks
+- [ ] Add a **Shortcode block** (raw `[…]` input, passed through to the `page.html`
+      pipeline) + shortcode passthrough inside Rich Text. Handle unknown shortcodes
+      (render the literal text, no crash).
 - [ ] Add Form block that uses the existing form-builder plugin and handles disabled
       plugin/missing form states.
 - [ ] Add Menu block that uses existing menu data and handles missing/empty menus.
@@ -250,6 +347,7 @@ architecture detail.
 - [ ] Add manual save, publish/update, discard draft, restore autosave, and revision
       restore flows.
 - [ ] Add optimistic locking/version conflict detection for two open editor sessions.
+      _(Builder v2 — post-MVP; MVP may use last-write-wins + a stale warning.)_
 - [ ] Snapshot builder JSON into existing revision flow.
 - [ ] Add tests for autosave, discard, publish, stale editor conflict, revision
       restore, and public render parity after restore.

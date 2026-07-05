@@ -3,8 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Lock } from "lucide-react";
 
 import { BUILDER_ENABLED } from "@/lib/builder/config";
-import type { BuilderDocument } from "@/lib/builder/document";
-import { sanitizeRichText } from "@/lib/sanitize";
+import type { BuilderDocument, BuilderNode } from "@/lib/builder/document";
+import { sanitizeBlockHtml, sanitizeRichText } from "@/lib/sanitize";
 import { getCurrentUser } from "@/server/auth/guard";
 import {
   BuilderAccessError,
@@ -98,7 +98,7 @@ export default async function BuilderPage({
         </div>
       </div>
 
-      {!hasStoredDocument ? (
+      {!hasStoredDocument && document.children.length === 0 ? (
         <div className="rounded-lg border bg-background p-4">
           <div className="max-w-2xl space-y-3">
             <h2 className="font-medium">
@@ -114,9 +114,39 @@ export default async function BuilderPage({
         </div>
       ) : null}
 
-      <BuilderCanvas document={document} entryId={id} typeSlug={type} />
+      {!hasStoredDocument && document.children.length > 0 ? (
+        <div className="rounded-lg border bg-background p-4 text-sm">
+          <p className="font-medium">Classic content converted for editing</p>
+          <p className="text-muted-foreground">
+            This preview was generated from existing `contentHtml`. Save in the
+            canvas to persist it as builder JSON.
+          </p>
+        </div>
+      ) : null}
+
+      <BuilderCanvas
+        document={document}
+        entryId={id}
+        typeSlug={type}
+        persisted={hasStoredDocument}
+      />
     </div>
   );
+}
+
+function sanitizeNodeForPreview(node: BuilderNode): BuilderNode {
+  const props = { ...node.props };
+  if (node.type === "richText" && typeof props.html === "string") {
+    props.html = sanitizeRichText(props.html);
+  }
+  if (node.type === "html" && typeof props.html === "string") {
+    props.html = sanitizeBlockHtml(props.html);
+  }
+  return {
+    ...node,
+    props,
+    children: node.children.map(sanitizeNodeForPreview),
+  };
 }
 
 function sanitizeDocumentForPreview(
@@ -124,15 +154,6 @@ function sanitizeDocumentForPreview(
 ): BuilderDocument {
   return {
     ...document,
-    sections: document.sections.map((section) => ({
-      ...section,
-      children: section.children.map((container) => ({
-        ...container,
-        children: container.children.map((block) => ({
-          ...block,
-          props: { ...block.props, html: sanitizeRichText(block.props.html) },
-        })),
-      })),
-    })),
+    children: document.children.map(sanitizeNodeForPreview),
   };
 }

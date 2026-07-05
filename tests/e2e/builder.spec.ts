@@ -61,3 +61,48 @@ test("builder renders a starter section, container, and rich-text block", async 
   const screenshot = await page.getByTestId("builder-canvas").screenshot();
   expect(screenshot.length).toBeGreaterThan(1000);
 });
+
+test("builder supports nested click selection, keyboard movement, and reload persistence", async ({
+  page,
+}) => {
+  await login(page);
+  await createDraftPage(page);
+
+  await page.getByRole("link", { name: "Visual builder" }).click();
+  await page.getByRole("button", { name: "Create starter section" }).click();
+
+  await page.getByTestId("builder-node-rich-text").click();
+  await expect(page.getByTestId("builder-selected-label")).toContainText(
+    "richText",
+  );
+  await expect(page.getByTestId("builder-selected-origin")).toContainText(
+    "page content",
+  );
+  await expect(page.getByTestId("builder-breadcrumb")).toContainText("Page");
+  await expect(page.getByTestId("builder-breadcrumb")).toContainText(
+    "Rich text 1",
+  );
+
+  await page.keyboard.press("ArrowUp");
+  await expect(page.getByTestId("builder-selected-label")).toContainText(
+    "container",
+  );
+
+  await expect(page).toHaveURL(/selected=container_intro/);
+  await page.reload();
+  await expect(page.getByTestId("builder-selected-label")).toContainText(
+    "container",
+  );
+  await expect(page.getByTestId("builder-breadcrumb")).toContainText(
+    "Container 1",
+  );
+
+  await page.keyboard.press("ArrowUp");
+  await expect(page.getByTestId("builder-selected-label")).toContainText(
+    "section",
+  );
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("builder-selected-label")).toContainText(
+    "page",
+  );
+});

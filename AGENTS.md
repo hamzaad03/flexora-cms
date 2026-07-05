@@ -71,7 +71,8 @@ Other scripts: `build` (`prisma generate && next build`), `start`, `typecheck`,
 `/setup` wizard, or set `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` before seeding).
 
 Env vars (validated fail-fast in `src/lib/env.ts`): `DATABASE_URL`, `AUTH_SECRET`,
-`APP_URL`, `AUTH_URL`, `STORAGE_DIR`, `NODE_ENV`, `LOG_LEVEL`.
+`APP_URL`, `AUTH_URL`, `STORAGE_DIR`, `NODE_ENV`, `LOG_LEVEL`,
+`SERVER_ACTIONS_BODY_SIZE_LIMIT`.
 
 ---
 
@@ -230,7 +231,11 @@ component trees rendered to HTML by the **component registry**
   `src/lib/layout-components.ts`. Output is HTML; `data-anim` is supported.
 - **Plugin:** add a `PluginModule` to `src/plugins/registry.ts` (manifest +
   `register(api)` using `api.addAction`/`api.addFilter` against `HOOKS.*`). It
-  appears under `/admin/plugins`; enabling registers its hooks.
+  appears under `/admin/plugins`; enabling registers its hooks. Skill:
+  `/plugin-builder` (`.claude/skills/plugin-builder/`) walks the full hook contract,
+  payloads, and enable lifecycle.
 - **Theme:** a folder with `theme.json` + `templates/` + `partials/` + `assets/`
   (see `themes/starter` and `docs/theme-spec.md`). Install via `/admin/themes` (zip)
-  or `db:install-themes`.
+  or `db:install-themes`. Skill: `/theme-builder`
+  (`.claude/skills/theme-builder/`) covers the template contract, customizer CSS
+  variables, regions, and the design phase.

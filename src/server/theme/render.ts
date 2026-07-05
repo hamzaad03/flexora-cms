@@ -8,6 +8,8 @@ import { hooks, HOOKS } from "@/server/hooks";
 import { ensurePluginsLoaded } from "@/server/services/plugins";
 import type { LayoutRenderCtx } from "@/server/layout/registry";
 import type { ResolvedMenuItem } from "@/server/services/menu";
+import { renderBuilderJson } from "@/lib/builder/render";
+import { BUILDER_ENABLED } from "@/lib/builder/config";
 import { parseManifest } from "./manifest";
 import { getEngine } from "./engine";
 import {
@@ -57,10 +59,27 @@ function entryToPageContext(
     url: `/${entry.slug}`,
     type: typeSlug,
     excerpt: entry.excerpt,
-    content: entry.contentHtml ?? "",
+    content: resolveEntryContent(entry),
     featured_image: entry.featuredMedia,
     published_at: entry.publishedAt,
   };
+}
+
+/**
+ * The public site uses visual-builder output ONLY when the entry opted into
+ * builder mode AND the builder is enabled. Otherwise it renders the classic
+ * `contentHtml` (Tiptap output / builder write-back), preserving shortcodes.
+ * This replaces the old unconditional `builderHtml || contentHtml` precedence
+ * that silently dropped classic content.
+ */
+function resolveEntryContent(entry: ContentEntry): string {
+  if (BUILDER_ENABLED && entry.editorMode === "builder") {
+    const { html, css } = renderBuilderJson(entry.contentJson);
+    if (html) {
+      return css ? `<style>${css}</style>${html}` : html;
+    }
+  }
+  return entry.contentHtml ?? "";
 }
 
 /** Resolve the template file path for a given template type from the manifest. */

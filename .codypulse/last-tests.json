@@ -1,0 +1,17 @@
+{
+  "runs": [
+    {
+      "id": "npm",
+      "name": "npm test",
+      "state": "available",
+      "command": "npm test",
+      "exit_code": null,
+      "duration_ms": 0,
+      "failures": 0,
+      "note": "The project's dependencies are not installed (run `npm install`), so its tests cannot run yet.",
+      "ran_at": 1792912623,
+      "ran_at_ms": 1792912623483
+    }
+  ],
+  "issues": []
+}

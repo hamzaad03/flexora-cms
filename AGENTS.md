@@ -239,3 +239,30 @@ component trees rendered to HTML by the **component registry**
   or `db:install-themes`. Skill: `/theme-builder`
   (`.claude/skills/theme-builder/`) covers the template contract, customizer CSS
   variables, regions, and the design phase.
+
+---
+
+## Roadmap, change log, and WordPress compatibility (planning guardrails)
+
+- **Roadmap of record:** `plan-v2.md` (long-lived plan; a roadmap item is not a
+  shipped feature — verify code before assuming). `PLAN.md` is the original MVP
+  architecture; `TODO.md` is the MVP checklist.
+- **`DEVELOPMENT_LOG.md`:** every committed change (including docs-only) gets an
+  entry per `plan-v2.md` §14 — real commit hash/subject only; use a temporary
+  `PENDING COMMIT` entry until the commit exists. Do not commit or push unless
+  the user authorizes it.
+- **WordPress compatibility is a major objective but NOT a current capability.**
+  Nothing in the repo imports, converts, or runs WordPress themes/plugins yet.
+  Work follows `plan-v2.md` §9A and Phase 9.1–9.10 in dependency order.
+  - WordPress PHP cannot run in Next.js. Never execute uploaded/downloaded PHP in
+    the app process, and **never remove the `.php` blocklist** in
+    `src/server/theme/install.ts`.
+  - Do **not** implement or scaffold a PHP compatibility runtime until the
+    Phase 9.8 research report + ADR is accepted by maintainers with a Go decision
+    (PoC code only under `experiments/`, never built or deployed).
+  - Compatibility code is optional and lives at the edge (`src/cms/compat/wordpress/`
+    when created); core modules must not import it.
+  - Don't claim WordPress compatibility, percentages, or supported plugin lists
+    in code, docs, or UI without a recorded test run. Never invent test results.
+  - Schema additions for migration tooling (import ledger etc.) need the move from
+    `prisma db push` to `prisma migrate` first, as additive migrations.

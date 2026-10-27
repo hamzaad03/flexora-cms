@@ -3,7 +3,7 @@ import { ShieldX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-export const metadata = { title: "Forbidden — FlxOraCMS" };
+export const metadata = { title: "Forbidden" };
 
 export default function ForbiddenPage() {
   return (

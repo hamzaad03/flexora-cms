@@ -39,6 +39,25 @@ export async function listEntries(
   return { items, total };
 }
 
+/** Title search across every content type (admin global search). */
+export async function searchEntries(q: string, take = 25) {
+  const query = q.trim();
+  if (!query) return [];
+  return db.contentEntry.findMany({
+    where: { title: { contains: query }, status: { not: "TRASHED" } },
+    orderBy: { updatedAt: "desc" },
+    take,
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      status: true,
+      updatedAt: true,
+      contentType: { select: { slug: true, labelSingular: true } },
+    },
+  });
+}
+
 /** Pages + posts usable as menu link targets. */
 export async function listLinkableEntries() {
   const rows = await db.contentEntry.findMany({

@@ -379,6 +379,9 @@ services rather than arbitrary imports of internal files.
     aggregation, retention.
 -   **Upgrade Manager:** schema migrations, application version
     compatibility, preflight, backup integration, recovery guidance.
+-   **CRM and Insights (optional modules, Phase 8.5):** leads, contacts,
+    companies, deals, tasks, attribution, Google Analytics dashboard,
+    SEO intelligence and growth recommendations.
 -   **WordPress Compatibility (optional module):** package analyzer and
     Compatibility Report, source adapters, migration engine and import
     ledger, theme converter, plugin catalog and adapters, migration
@@ -1109,6 +1112,118 @@ baseline measurement. - No critical data corruption or cross-user cache
 leakage under load tests. - Degraded dependencies fail predictably and
 are observable.
 
+### Phase 8.5 --- FlxOraCRM, SEO intelligence and growth insights
+
+**Goal:** make FlxOraCMS and FlxOraCRM one product: leads captured on the
+site flow into a built-in CRM, and the system tells the owner where leads
+come from, which pages need work, and what to do next --- without
+leaving the admin. The CRM is an optional module inside the same
+application (modular monolith), not a separate deployment. Number 8.5 is
+used so Phases 9--11 keep their numbers.
+
+**Prerequisites:** Phase 2 (application layer), Phase 3 (field schema,
+reused for CRM custom fields), Phase 6 (plugin/module lifecycle and
+permissions), Phase 7 (`prisma migrate` adopted, verified backup/restore),
+Phase 8 (performance baseline and query budgets). Existing form builder,
+analytics and SEO modules are extended, not replaced.
+
+**Tracks (deliver in this order, each as its own gated slice):**
+
+1.  **8.5.1 FlxOraCRM v1** --- leads, contacts, companies, deals with
+    pipeline stages, tasks, notes and activity timeline; automatic lead
+    capture from form submissions with source, UTM and landing page;
+    assignment, statuses, tags, custom fields, search/filters, CSV
+    import/export, email notifications and follow-up reminders; lead and
+    pipeline dashboards. Not in v1: email sync, calendar, quotes,
+    workflow automation, full ESPO CRM parity (staged later).
+2.  **8.5.2 Attribution and analytics depth** --- sessions, events,
+    goals/conversions, UTM campaigns, funnels; link visitor to lead
+    (privacy-preserving, consent-aware) so every lead has a first-touch
+    and last-touch page/campaign. Heatmaps, session recording and A/B
+    tests are out of scope until separately planned.
+3.  **8.5.3 Google Analytics dashboard** --- optional read-only GA4
+    integration (Google Analytics Data API) showing key reports inside
+    the admin so users need not open GA in another tab. Falls back to
+    first-party analytics when not connected.
+4.  **8.5.4 SEO suite ("Yoast Premium-class" capabilities)** --- built on
+    the existing per-entry SEO and score: multiple/related focus
+    keyphrases, readability analysis, internal-linking suggestions,
+    orphaned and cornerstone content, schema/structured data editor,
+    social previews, redirect suggestions on slug change, SEO audit of
+    the whole site, and bulk SEO editing. Implemented clean-room from
+    public SEO guidance; no code, branding or assets copied from Yoast
+    or any other plugin, and no "Yoast compatible" wording beyond
+    factual import of its metadata (Phase 9.6).
+5.  **8.5.5 Growth review and recommendations** --- a "Site Growth
+    Review" that runs on demand and after a migration (Phase 9.7):
+    combines SEO audit, analytics, lead attribution and content
+    performance to list which pages bring leads, which underperform, and
+    a prioritized action list with an **effort estimate**.
+
+**Architecture decisions (ADRs):**
+
+-   Module boundary and enable/disable: CRM and insights are optional
+    modules; core must not import them; sites without CRM pay no
+    request-path cost.
+-   CRM data model (new tables via additive Prisma migrations), reuse of
+    the Phase 3 field system, and how form submissions map to leads
+    (idempotent, de-duplicated by contact).
+-   Visitor-to-lead identity and consent model (what is stored, for how
+    long, how it is erased).
+-   GA4 connection: OAuth versus service account, where credentials are
+    stored (encrypted at rest), API quota and caching strategy, read-only
+    scopes only.
+-   Recommendation engine: **rule-based and explainable** first (each
+    recommendation cites its data and rule). Any AI-generated advice is a
+    later, optional, clearly labeled addition and never changes content
+    automatically.
+-   Effort estimates are heuristics (for example issue count x
+    documented minutes-per-fix, adjustable by the user), displayed as
+    estimates with their inputs. They are not guarantees and must not be
+    presented as measured outcomes.
+
+**Deliverables:** the five tracks above with admin UI, permissions
+(for example `crm.view`, `crm.manage`, `insights.view`), docs and
+runbooks; data export and deletion tooling for leads and contacts;
+retention settings.
+
+**Acceptance criteria:**
+
+-   A form submission creates or updates exactly one lead/contact and
+    records its source; re-processing creates no duplicates.
+-   Every lead shows its attribution (page, referrer, UTM) or an explicit
+    "unknown" with the reason.
+-   Without GA connected, nothing calls Google; with it connected,
+    dashboards show GA data read-only and degrade gracefully on quota or
+    network errors.
+-   Every recommendation shows the evidence and rule that produced it;
+    estimates show their inputs.
+-   Disabling the CRM module leaves the CMS fully functional and data
+    intact.
+
+**Tests:** unit (lead de-duplication, attribution, scoring rules,
+estimation); integration (migrations clean install and upgrade, form to
+lead flow, CSV import with bad rows); contract tests for the GA client
+using recorded fixtures (no live credentials in CI); RBAC tests on every
+CRM action; E2E for capture, pipeline and dashboard; performance tests
+with large lead tables (indexes, pagination).
+
+**Security and privacy controls:** server-side authorization on every
+CRM action; lead data treated as personal data (minimization, consent
+where tracking links visitor to lead, retention limits, export and
+erasure); CSV import validated and sanitized (spreadsheet formula
+injection on export); GA credentials encrypted, never logged or sent to
+the client; rate limits on public lead-capture endpoints; audit log for
+lead exports, deletions and permission changes; no third-party data
+sharing by default.
+
+**Measurable targets (provisional; set after baselines):** form-to-lead
+success and de-duplication rate on fixtures at 100%; lead list and
+dashboard p95 latency within the Phase 8 budgets at a stated lead count;
+SEO audit of a 1,000-page fixture site within a time budget; recommendation
+precision measured by maintainer review of a labelled sample (target set
+after the first sample); zero known cross-user data exposure.
+
 ### Phase 9 --- WordPress compatibility program (Phases 9.1--9.10)
 
 **Goal:** make adopting FlxOraCMS from WordPress cheap, predictable and
@@ -1722,7 +1837,9 @@ verification and rollback.
     (link check, media check, visual diff, SEO parity of titles, meta,
     canonicals and sitemap URLs against the source); cutover checklist
     (redirects, robots, sitemap, analytics IDs, DNS guidance);
-    post-migration 404 monitoring that suggests redirects.
+    post-migration 404 monitoring that suggests redirects; and, when
+    Phase 8.5 is available, an automatic Site Growth Review of the
+    migrated site (SEO gaps, lead sources, pages to improve).
 -   Persisted sessions, exportable reports (JSON and printable) with
     secrets and PII stripped, audit trail, concurrency lock, runbook,
     and troubleshooting guide.

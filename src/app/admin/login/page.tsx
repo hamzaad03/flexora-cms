@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "./login-form";
+import { FlexoraLogo } from "@/components/brand/flexora-logo";
 import { isSetupComplete } from "@/server/services/access";
 import { getCurrentUser } from "@/server/auth/guard";
 import {
@@ -12,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export const metadata = { title: "Sign in — FlxOraCMS" };
+export const metadata = { title: "Sign in" };
 
 // Reads the DB / session at request time; never prerender at build.
 export const dynamic = "force-dynamic";
@@ -28,10 +29,11 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className="bg-muted/30 flex min-h-svh items-center justify-center p-4">
+    <div className="from-accent/60 via-background to-background flex min-h-svh bg-gradient-to-b items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-xl">FlxOraCMS</CardTitle>
+          <FlexoraLogo className="mb-2" />
+          <CardTitle className="text-xl">Welcome back</CardTitle>
           <CardDescription>Sign in to your dashboard</CardDescription>
         </CardHeader>
         <CardContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ChevronDown,
   ChevronsUpDown,
   ExternalLink,
   LayoutDashboard,
@@ -56,7 +57,7 @@ export function UserMenu({
   email: string;
   roles?: string[];
   canManageSettings?: boolean;
-  variant?: "icon" | "sidebar";
+  variant?: "icon" | "sidebar" | "header";
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -95,6 +96,28 @@ export function UserMenu({
               </span>
               <ChevronsUpDown className="text-muted-foreground size-4" />
             </button>
+          ) : variant === "header" ? (
+            <button
+              {...props}
+              type="button"
+              aria-label="Open account menu"
+              className="hover:bg-muted aria-expanded:bg-muted focus-visible:ring-ring/50 flex items-center gap-2.5 rounded-lg py-1 pr-2 pl-1 text-left outline-none transition-colors focus-visible:ring-3"
+            >
+              <Avatar className="size-9">
+                <AvatarFallback className="bg-gradient-to-br from-[#2563EB] to-[#8B5CF6] text-xs font-semibold text-white">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <span className="hidden min-w-0 leading-tight lg:block">
+                <span className="block max-w-36 truncate text-sm font-semibold">
+                  {displayName}
+                </span>
+                <span className="text-muted-foreground block max-w-36 truncate text-xs">
+                  {role}
+                </span>
+              </span>
+              <ChevronDown className="text-muted-foreground hidden size-4 lg:block" />
+            </button>
           ) : (
             <Button
               {...props}
@@ -112,6 +135,7 @@ export function UserMenu({
       />
       <DropdownMenuContent
         align={variant === "sidebar" ? "start" : "end"}
+        sideOffset={8}
         side={variant === "sidebar" ? "top" : "bottom"}
         className="w-64"
       >

@@ -89,7 +89,7 @@ export const NAV: NavGroup[] = [
       {
         label: "Analytics",
         href: "/admin/analytics",
-        icon: "bar-chart-3",
+        icon: "chart-column",
         permission: "analytics.view",
       },
     ],

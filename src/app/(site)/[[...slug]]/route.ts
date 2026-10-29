@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 
-import { resolveRoute } from "@/server/services/public-router";
+import {
+  listPublishedEntries,
+  resolveRoute,
+} from "@/server/services/public-router";
 import { getActiveTheme } from "@/server/services/theme";
-import { renderEntry, renderNotFound } from "@/server/theme/render";
+import {
+  renderArchive,
+  renderEntry,
+  renderNotFound,
+} from "@/server/theme/render";
 import { matchRedirect } from "@/server/services/redirect";
 import { injectSiteScripts } from "@/server/services/site-scripts";
 import { hooks, HOOKS } from "@/server/hooks";
@@ -75,6 +82,14 @@ export async function GET(
   try {
     const resolved = await resolveRoute(segments);
     if (!resolved) {
+      // Built-in blog listing at /blog, unless a page already claims that slug.
+      if (path === "/blog") {
+        const posts = await listPublishedEntries("post");
+        return finalize(
+          await renderArchive(posts, "post", { title: "Blog" }),
+          200,
+        );
+      }
       return finalize(await renderNotFound(), 404);
     }
     const body = await renderEntry(

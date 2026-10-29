@@ -1,17 +1,22 @@
 {% layout 'layouts/base' %}
 {% block content %}
-  <article class="post">
-    <header class="post__header">
+  <section class="page-hero">
+    <div class="container">
+      <p class="page-hero__eyebrow"><a href="/blog">&larr; Blog</a></p>
       <h1>{{ page.title }}</h1>
       {% if page.published_at %}
-        <time datetime="{{ page.published_at | date: '%Y-%m-%d' }}">
+        <time class="page-hero__date" datetime="{{ page.published_at | date: '%Y-%m-%d' }}">
           {{ page.published_at | date: '%B %e, %Y' }}
         </time>
       {% endif %}
-    </header>
-    {% if page.featured_image %}
-      <img class="post__featured" src="{{ page.featured_image }}" alt="{{ page.title }}" />
-    {% endif %}
-    <div class="prose">{{ page.content }}</div>
+    </div>
+  </section>
+  <article class="section">
+    <div class="container">
+      {% if page.featured_image %}
+        <img class="page__featured" src="{{ page.featured_image }}" alt="{{ page.title }}" />
+      {% endif %}
+      <div class="prose prose--page">{{ page.content }}</div>
+    </div>
   </article>
 {% endblock %}

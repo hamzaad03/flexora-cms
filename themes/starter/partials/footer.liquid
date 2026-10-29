@@ -2,15 +2,36 @@
   {{ region.footer }}
 {% else %}
   <footer class="site-footer">
-    <div class="container site-footer__inner">
-      <nav class="footer-nav" aria-label="Footer">
+    <div class="container site-footer__grid">
+      <div class="site-footer__about">
+        <a class="brand brand--light" href="/">
+          {% if site.logo %}
+            <img src="{{ site.logo }}" alt="{{ site.title }}" class="brand__logo" />
+          {% else %}
+            <span class="brand__name">{{ site.title }}</span>
+          {% endif %}
+        </a>
+        {% if site.tagline %}<p>{{ site.tagline }}</p>{% endif %}
+      </div>
+      <nav class="site-footer__col" aria-label="Explore">
+        <h2>Explore</h2>
+        <ul>
+          {% for item in menus.main %}
+            <li><a href="{{ item.url }}" target="{{ item.target }}">{{ item.label }}</a></li>
+          {% endfor %}
+        </ul>
+      </nav>
+      <nav class="site-footer__col" aria-label="Footer">
+        <h2>Company</h2>
         <ul>
           {% for item in menus.footer %}
             <li><a href="{{ item.url }}" target="{{ item.target }}">{{ item.label }}</a></li>
           {% endfor %}
         </ul>
       </nav>
-      <p class="copyright">&copy; {{ year }} {{ site.title }}. {{ site.tagline }}</p>
+    </div>
+    <div class="container site-footer__bar">
+      <p>&copy; {{ year }} {{ site.title }}. All rights reserved.</p>
     </div>
   </footer>
 {% endif %}

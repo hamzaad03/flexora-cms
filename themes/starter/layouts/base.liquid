@@ -4,8 +4,9 @@
     {% include 'partials/head' %}
   </head>
   <body>
+    <a class="skip-link" href="#content">Skip to content</a>
     {% include 'partials/header' %}
-    <main class="container">
+    <main id="content">
       {% block content %}{% endblock %}
     </main>
     {% include 'partials/footer' %}

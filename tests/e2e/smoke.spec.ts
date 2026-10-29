@@ -4,7 +4,9 @@ import { test, expect } from "@playwright/test";
 // setup → login → content → theme render flows from PLAN.md "Verification".
 test("home page renders", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "FlxOraCMS" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "A modern CMS for creative agencies" }),
+  ).toBeVisible();
 });
 
 test("unauthenticated admin redirects to login or setup", async ({ page }) => {

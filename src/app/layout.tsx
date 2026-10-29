@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/components/theme-provider";
 
 // Brand typeface (see the FlexoraCMS brand sheet).
 const jakarta = Plus_Jakarta_Sans({
@@ -31,14 +31,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      // flx-theme.js sets the `dark` class before hydration.
       suppressHydrationWarning
       className={`${jakarta.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider>
-          {children}
-          <Toaster richColors position="top-right" />
-        </ThemeProvider>
+        {children}
+        <Toaster richColors position="top-right" />
+        <Script src="/flx-theme.js" strategy="beforeInteractive" />
       </body>
     </html>
   );

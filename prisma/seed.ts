@@ -123,8 +123,8 @@ async function seedMenus() {
 
 async function seedSettings() {
   const settings: Record<string, unknown> = {
-    "identity.title": "FlxOraCMS Site",
-    "identity.tagline": "Built with FlxOraCMS",
+    "identity.title": "FlexoraCMS Demo",
+    "identity.tagline": "The modern CMS for creative agencies.",
     "identity.logo": null,
     "identity.favicon": null,
   };
@@ -137,10 +137,10 @@ async function seedSettings() {
   }
 
   const customizer: Record<string, unknown> = {
-    "colors.primary": "#0066ff",
-    "colors.secondary": "#111111",
-    "colors.accent": "#22c55e",
-    "colors.text": "#171717",
+    "colors.primary": "#2563eb",
+    "colors.secondary": "#0f172a",
+    "colors.accent": "#8b5cf6",
+    "colors.text": "#0f172a",
     "colors.background": "#ffffff",
     "fonts.heading": "Inter",
     "fonts.body": "Inter",
@@ -174,46 +174,121 @@ async function seedSampleContent() {
   const authorId = admin?.id ?? null;
   const now = new Date();
 
-  const home = await db.contentEntry.create({
-    data: {
-      contentTypeId: pageType.id,
-      title: "Welcome to FlxOraCMS",
-      slug: "home",
-      status: "PUBLISHED",
-      publishedAt: now,
-      authorId,
-      excerpt: "A self-hosted CMS where you upload a theme and edit content.",
-      contentHtml:
-        "<p>This home page is served through your active theme. Edit it in the admin, switch themes, and the content stays the same.</p>",
-    },
-  });
+  const page = (
+    title: string,
+    slug: string,
+    excerpt: string,
+    contentHtml: string,
+  ) =>
+    db.contentEntry.create({
+      data: {
+        contentTypeId: pageType.id,
+        title,
+        slug,
+        status: "PUBLISHED",
+        publishedAt: now,
+        authorId,
+        excerpt,
+        contentHtml,
+      },
+    });
+  const post = (
+    title: string,
+    slug: string,
+    excerpt: string,
+    contentHtml: string,
+    daysAgo: number,
+  ) =>
+    db.contentEntry.create({
+      data: {
+        contentTypeId: postType.id,
+        title,
+        slug,
+        status: "PUBLISHED",
+        publishedAt: new Date(now.getTime() - daysAgo * 86_400_000),
+        authorId,
+        excerpt,
+        contentHtml,
+      },
+    });
 
-  const about = await db.contentEntry.create({
-    data: {
-      contentTypeId: pageType.id,
-      title: "About",
-      slug: "about",
-      status: "PUBLISHED",
-      publishedAt: now,
-      authorId,
-      excerpt: "About this site.",
-      contentHtml:
-        "<p>FlxOraCMS lets agencies import ready-made HTML/CSS themes and manage content without touching code.</p>",
-    },
-  });
+  const home = await page(
+    "A modern CMS for creative agencies",
+    "home",
+    "Upload a ready-made theme, model your own content, and edit everything without touching code.",
+    `<h2>Everything you need to launch</h2>
+<p>These sections are plain headings and lists in the page editor, styled by the active theme.</p>
+<ul>
+<li><strong>Themes without code</strong> Upload an HTML/CSS theme and have a live, editable site in minutes.</li>
+<li><strong>Custom content types</strong> Model services, projects or products with your own fields.</li>
+<li><strong>Visual builder</strong> Design headers, footers and page sections with optional animations.</li>
+<li><strong>SEO built in</strong> Titles, descriptions, sitemaps and redirects, with a live score.</li>
+<li><strong>Forms and leads</strong> Add secure contact forms to any page with a shortcode.</li>
+<li><strong>Analytics</strong> Privacy-friendly visitor statistics inside the admin dashboard.</li>
+</ul>
+<h2>How it works</h2>
+<ol>
+<li><strong>Choose a theme</strong> Install a theme from a zip, or start from the included starter.</li>
+<li><strong>Add your content</strong> Write pages and posts with the editor, and organize menus.</li>
+<li><strong>Publish</strong> Go live, then track visits and enquiries from the dashboard.</li>
+</ol>
+<h2>Ready to start?</h2>
+<p>Tell us about your project and we will get back to you. <a href="/contact">Contact us</a></p>`,
+  );
 
-  await db.contentEntry.create({
-    data: {
-      contentTypeId: postType.id,
-      title: "Hello World",
-      slug: "hello-world",
-      status: "PUBLISHED",
-      publishedAt: now,
-      authorId,
-      excerpt: "Our very first post.",
-      contentHtml: "<p>This is a sample blog post rendered by the theme.</p>",
-    },
-  });
+  const about = await page(
+    "About us",
+    "about",
+    "Who we are and how we work.",
+    `<p>We are a small team that helps agencies and businesses build fast, flexible websites. This page is demo content, so replace it with your own story.</p>
+<h2>What we believe</h2>
+<p>Good websites are easy to edit, quick to load and simple to maintain. Your content should never be locked inside a theme.</p>
+<h2>How we work</h2>
+<p>We start with your goals, design the structure, then build and launch in small steps so you can see progress early.</p>`,
+  );
+
+  const services = await page(
+    "Services",
+    "services",
+    "Design, build and grow your website.",
+    `<h2>Website design</h2>
+<p>Clean, responsive layouts that match your brand, built from reusable sections.</p>
+<h2>Content and SEO</h2>
+<p>Structured content, clear page titles and descriptions, and a sitemap so search engines can find your pages.</p>
+<h2>Forms and enquiries</h2>
+<p>Contact and enquiry forms with spam protection, so messages reach you.</p>
+<p>Want to talk it through? <a href="/contact">Get in touch</a>.</p>`,
+  );
+
+  await page(
+    "Contact",
+    "contact",
+    "Send us a message and we will reply soon.",
+    `<p>Fill in the form below to start a conversation.</p>
+<p>[flxform slug="contact"]</p>`,
+  );
+
+  await post(
+    "Hello World",
+    "hello-world",
+    "Our very first post.",
+    "<p>This is a sample blog post rendered by the theme. Edit or delete it from the admin.</p>",
+    14,
+  );
+  await post(
+    "Choosing a theme for your site",
+    "choosing-a-theme",
+    "What to look for in a theme before you install it.",
+    "<p>A good theme is fast, accessible and easy to adapt. Check that it has the templates you need, such as home, page, post and archive, and that it works on small screens.</p>",
+    7,
+  );
+  await post(
+    "Writing pages that rank",
+    "writing-pages-that-rank",
+    "A short checklist for page titles and descriptions.",
+    "<h2>The basics</h2><p>Give every page a clear title, a short description and one main topic. Use headings to structure the page, and add descriptive alt text to images.</p>",
+    2,
+  );
 
   const mainMenu = await db.menu.findUnique({ where: { slug: "main" } });
   if (mainMenu) {
@@ -233,24 +308,68 @@ async function seedSampleContent() {
           reference: about.id,
           sortOrder: 1,
         },
+        {
+          menuId: mainMenu.id,
+          label: "Services",
+          type: "page",
+          reference: services.id,
+          sortOrder: 2,
+        },
+        {
+          menuId: mainMenu.id,
+          label: "Blog",
+          type: "custom",
+          url: "/blog",
+          sortOrder: 3,
+        },
+        {
+          menuId: mainMenu.id,
+          label: "Contact",
+          type: "custom",
+          url: "/contact",
+          sortOrder: 4,
+        },
       ],
     });
   }
 
   const footerMenu = await db.menu.findUnique({ where: { slug: "footer" } });
   if (footerMenu) {
-    await db.menuItem.create({
-      data: {
-        menuId: footerMenu.id,
-        label: "About",
-        type: "page",
-        reference: about.id,
-        sortOrder: 0,
-      },
+    await db.menuItem.createMany({
+      data: [
+        {
+          menuId: footerMenu.id,
+          label: "About",
+          type: "page",
+          reference: about.id,
+          sortOrder: 0,
+        },
+        {
+          menuId: footerMenu.id,
+          label: "Services",
+          type: "page",
+          reference: services.id,
+          sortOrder: 1,
+        },
+        {
+          menuId: footerMenu.id,
+          label: "Blog",
+          type: "custom",
+          url: "/blog",
+          sortOrder: 2,
+        },
+        {
+          menuId: footerMenu.id,
+          label: "Contact",
+          type: "custom",
+          url: "/contact",
+          sortOrder: 3,
+        },
+      ],
     });
   }
 
-  console.log("✓ Sample content: home, about, hello-world + menu items");
+  console.log("✓ Sample content: 4 pages, 3 posts, main + footer menus");
 }
 
 async function seedFormsDemo() {
@@ -308,43 +427,60 @@ async function seedFormsDemo() {
       isEnabled: true,
     },
   });
-
-  // Drop the shortcode onto the About page if not already there.
-  const about = await db.contentEntry.findFirst({ where: { slug: "about" } });
-  if (about && !(about.contentHtml ?? "").includes("[flxform")) {
-    await db.contentEntry.update({
-      where: { id: about.id },
-      data: {
-        contentHtml: `${about.contentHtml ?? ""}\n<h2>Get in touch</h2>\n<p>[flxform slug="contact"]</p>`,
-      },
-    });
-    console.log("✓ Added contact form to the About page");
-  }
 }
 
-async function seedSuperAdmin() {
-  const email = process.env.SEED_ADMIN_EMAIL;
-  const password = process.env.SEED_ADMIN_PASSWORD;
+/**
+ * Optionally seed a login for a role from env vars (dev/demo convenience).
+ * Skipped when the email/password variables are not set.
+ */
+async function seedUserFromEnv(opts: {
+  roleSlug: string;
+  label: string;
+  name: string;
+  emailVar: string;
+  passwordVar: string;
+}) {
+  const email = process.env[opts.emailVar];
+  const password = process.env[opts.passwordVar];
   if (!email || !password) {
     console.log(
-      "ℹ No SEED_ADMIN_EMAIL/PASSWORD set — skipping admin (use the setup wizard).",
+      `ℹ No ${opts.emailVar}/${opts.passwordVar} set — skipping ${opts.label}${
+        opts.roleSlug === "super-admin" ? " (use the setup wizard)" : ""
+      }.`,
     );
     return;
   }
-  const role = await db.role.findUnique({ where: { slug: "super-admin" } });
+  const role = await db.role.findUnique({ where: { slug: opts.roleSlug } });
   if (!role) return;
   const passwordHash = await bcrypt.hash(password, 12);
   const user = await db.user.upsert({
     where: { email },
     update: { passwordHash, isActive: true },
-    create: { email, name: "Super Admin", passwordHash, isActive: true },
+    create: { email, name: opts.name, passwordHash, isActive: true },
   });
   await db.userRole.upsert({
     where: { userId_roleId: { userId: user.id, roleId: role.id } },
     update: {},
     create: { userId: user.id, roleId: role.id },
   });
-  console.log(`✓ Super Admin: ${email}`);
+  console.log(`✓ ${opts.label}: ${email}`);
+}
+
+async function seedSuperAdmin() {
+  await seedUserFromEnv({
+    roleSlug: "super-admin",
+    label: "Super Admin",
+    name: "Super Admin",
+    emailVar: "SEED_ADMIN_EMAIL",
+    passwordVar: "SEED_ADMIN_PASSWORD",
+  });
+  await seedUserFromEnv({
+    roleSlug: "admin",
+    label: "Administrator",
+    name: "Administrator",
+    emailVar: "SEED_STAFF_ADMIN_EMAIL",
+    passwordVar: "SEED_STAFF_ADMIN_PASSWORD",
+  });
 }
 
 async function main() {

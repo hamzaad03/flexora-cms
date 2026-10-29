@@ -3,18 +3,36 @@
 {% else %}
   <header class="site-header">
     <div class="container site-header__inner">
-      <a class="brand" href="/">
+      <a class="brand" href="/" aria-label="{{ site.title }} home">
         {% if site.logo %}
           <img src="{{ site.logo }}" alt="{{ site.title }}" class="brand__logo" />
         {% else %}
-          {{ site.title }}
+          <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="bm-a" x1="6" y1="30" x2="28" y2="3" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#2563EB" /><stop offset=".55" stop-color="#4F46E5" /><stop offset="1" stop-color="#A855F7" />
+              </linearGradient>
+              <linearGradient id="bm-b" x1="15" y1="21" x2="25" y2="13" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#06B6D4" /><stop offset="1" stop-color="#3B82F6" />
+              </linearGradient>
+            </defs>
+            <path d="M8 6.5 27.5 3 24 10.2 15.2 11.6V27.6L8 30.5Z" fill="url(#bm-a)" />
+            <path d="M15.2 15.4 24.6 13.8 21.3 20.4 15.2 21.4Z" fill="url(#bm-b)" />
+          </svg>
+          <span class="brand__name">{{ site.title }}</span>
         {% endif %}
       </a>
+
+      <input type="checkbox" id="nav-check" class="nav-check" />
+      <label for="nav-check" class="nav-burger" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </label>
+
       <nav class="main-nav" aria-label="Main">
         <ul>
           {% for item in menus.main %}
-            <li>
-              <a href="{{ item.url }}" target="{{ item.target }}">{{ item.label }}</a>
+            <li class="{% if item.children.size > 0 %}has-children{% endif %}">
+              <a href="{{ item.url }}" target="{{ item.target }}"{% if page.url == item.url %} aria-current="page"{% endif %}>{{ item.label }}</a>
               {% if item.children.size > 0 %}
                 <ul class="submenu">
                   {% for child in item.children %}
@@ -25,6 +43,7 @@
             </li>
           {% endfor %}
         </ul>
+        <a class="btn btn--primary btn--sm main-nav__cta" href="/contact">Get in touch</a>
       </nav>
     </div>
   </header>

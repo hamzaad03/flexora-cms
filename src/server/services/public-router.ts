@@ -50,3 +50,18 @@ export async function resolveRoute(
 
   return { entry, typeSlug: entry.contentType.slug, templateType };
 }
+
+/** Published (or scheduled-and-due) entries of a type, newest first. */
+export async function listPublishedEntries(typeSlug: string, take = 50) {
+  return db.contentEntry.findMany({
+    where: {
+      contentType: { slug: typeSlug },
+      OR: [
+        { status: "PUBLISHED" },
+        { status: "SCHEDULED", publishedAt: { lte: new Date() } },
+      ],
+    },
+    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+    take,
+  });
+}

@@ -12,7 +12,7 @@ async function login(page: Page) {
 }
 
 test("contact form renders, submits, and shows success", async ({ page }) => {
-  await page.goto("/about");
+  await page.goto("/contact");
   // The form-builder plugin renders the shortcode into a real form.
   await expect(page.locator("form.flx-form")).toBeVisible();
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Globe, Menu, Moon, Search, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 
 import type { NavGroup } from "./nav-items";
 import { Sidebar, type QuickLink } from "./sidebar";
@@ -68,14 +68,14 @@ function SearchBox({ canSearch }: { canSearch: boolean }) {
 }
 
 function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   return (
     <Button
       variant="ghost"
       size="icon"
       className="rounded-lg"
       aria-label="Toggle dark mode"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
     >
       {/* Both icons render; CSS shows the right one, so SSR never mismatches. */}
       <Moon className="size-[1.1rem] dark:hidden" />

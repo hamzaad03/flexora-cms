@@ -47,7 +47,9 @@ test("analytics dashboard renders", async ({ page }) => {
 test("entry editor shows a live SEO score panel", async ({ page }) => {
   await login(page);
   await page.goto("/admin/content/page");
-  await page.getByRole("link", { name: "Welcome to FlxOraCMS" }).click();
+  await page
+    .getByRole("link", { name: "A modern CMS for creative agencies" })
+    .click();
   await page.waitForURL(/\/admin\/content\/page\/[^/]+$/);
   await expect(page.locator("#seo-keyword")).toBeVisible();
 });

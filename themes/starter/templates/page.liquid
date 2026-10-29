@@ -1,12 +1,17 @@
 {% layout 'layouts/base' %}
 {% block content %}
-  <article class="page">
-    <header class="page__header">
+  <section class="page-hero">
+    <div class="container">
       <h1>{{ page.title }}</h1>
-    </header>
-    {% if page.featured_image %}
-      <img class="page__featured" src="{{ page.featured_image }}" alt="{{ page.title }}" />
-    {% endif %}
-    <div class="prose">{{ page.content }}</div>
+      {% if page.excerpt %}<p class="page-hero__lead">{{ page.excerpt }}</p>{% endif %}
+    </div>
+  </section>
+  <article class="section">
+    <div class="container">
+      {% if page.featured_image %}
+        <img class="page__featured" src="{{ page.featured_image }}" alt="{{ page.title }}" />
+      {% endif %}
+      <div class="prose prose--page">{{ page.content }}</div>
+    </div>
   </article>
 {% endblock %}
